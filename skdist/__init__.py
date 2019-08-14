@@ -14,3 +14,5 @@ ready for prediction using the inherited methods.
 """
 
 __version__ = '0.0.1'
+
+__all__ = ['distribute', 'word_embeddings', 'preprocessing']
