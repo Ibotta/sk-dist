@@ -3,7 +3,7 @@
 # sk-dist: Distributed scikit-learn meta-estimators in PySpark
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://travis-ci.com/Ibotta/sk-dist.png?branch=master)](https://travis-ci.com/Ibotta/sk-dist)
+[![Build Status](https://travis-ci.org/Ibotta/sk-dist.png?branch=master)](https://travis-ci.org/Ibotta/sk-dist)
 
 ## What is it?
 `sk-dist` is a Python module for machine learning built on top of 
