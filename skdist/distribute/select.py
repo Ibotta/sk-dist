@@ -10,7 +10,7 @@ from sklearn.base import (
     )
 from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import check_is_fitted 
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, safe_sqr
 from sklearn.model_selection import check_cv
 from sklearn.metrics.scorer import check_scoring
 from joblib import Parallel, delayed
@@ -23,7 +23,7 @@ def _drop_col(X, index):
     """ Drop index columns from numpy array or sparse matrix """
     if issparse(X):
         cols = np.arange(X.shape[1])
-        cols_to_keep = np.where(np.logical_not(np.in1d(cols, [5])))[0]
+        cols_to_keep = np.where(np.logical_not(np.in1d(cols, index)))[0]
         return X[:, cols_to_keep]
     else:
         return np.delete(X, index, axis=1)
@@ -59,7 +59,11 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
             Number of partitions to use for parallelization of parameter
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
-        n_features (int): Number of features to keep after elimination.
+        n_features_to_select (int): Number of features to keep after elimination.
+        step (int or float): If greater than or equal to 1, then `step` 
+            corresponds to the (integer) number of features to remove at each iteration.
+            If within (0.0, 1.0), then `step` corresponds to the percentage
+            (rounded down) of features to remove at each iteration.
         cv (int or cv object): Determines the cross-validation splitting strategy.
         scoring (str or callable): Scoring function or callable to evaluate 
             predictions on the training set for feature elimination.
@@ -73,7 +77,8 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
                  estimator, 
                  sc=None,
                  partitions='auto',
-                 n_features=None, 
+                 n_features_to_select=None, 
+                 step=1,
                  cv=5, 
                  scoring=None, 
                  verbose=False, 
@@ -83,7 +88,8 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
         self.estimator = estimator
         self.sc = sc
         self.partitions = partitions
-        self.n_features = n_features
+        self.n_features_to_select = n_features_to_select
+        self.step = step
         self.cv = cv
         self.scoring = scoring
         self.verbose = verbose
@@ -95,11 +101,45 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
         X, y = check_X_y(X, y, "csr", ensure_min_features=2)
         cv = check_cv(self.cv, y, is_classifier(self.estimator))
         scorer = check_scoring(self.estimator, scoring=self.scoring)
+
         n_features = X.shape[1]
+        if self.n_features_to_select is None:
+            n_features_to_select = n_features // 2
+        else:
+            n_features_to_select = self.n_features_to_select
+
+        if 0.0 < self.step < 1.0:
+            step = int(max(1, self.step * n_features))
+        else:
+            step = int(self.step)
+        if step <= 0:
+            raise ValueError("Step must be >0")
+
+        initial_estimator = _clone(self.estimator)
+        initial_estimator.fit(X, y, **fit_params)
+        if hasattr(initial_estimator, 'coef_'):
+            coefs = initial_estimator.coef_
+        else:
+            coefs = getattr(initial_estimator, 'feature_importances_', None)
+        if coefs is None:
+            raise RuntimeError('The classifier does not expose '
+                                '"coef_" or "feature_importances_" '
+                                'attributes')
+        if coefs.ndim > 1:
+            ranks = np.argsort(safe_sqr(coefs).sum(axis=0))
+        else:
+            ranks = np.argsort(safe_sqr(coefs))
+        ranks = np.ravel(ranks)[:(n_features - n_features_to_select)]
+
+        this_step = 0
+        features_to_remove = [np.array([])]
+        while this_step < (n_features - n_features_to_select):
+            this_step += step
+            features_to_remove.append(ranks[:this_step])
+
         cv_splits_ = list(cv.split(X,y,groups))
-        fit_sets = list(product(range(n_features), cv_splits_))
+        fit_sets = list(product(features_to_remove, cv_splits_))
         base_estimator = _clone(self.estimator)
-        
         if not self.sc:
             parallel = Parallel(
                 n_jobs=self.n_jobs, verbose=self.verbose, 
@@ -135,14 +175,11 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
             this_score = np.mean(score_set)
             self.scores_.append(this_score)
             
-        if self.n_features is None:
-            n_features_ = int(round(n_features / 2.0))
-        else:
-            n_features_ = self.n_features
-        self.best_features_ = np.argsort(self.scores_)[:n_features_]
-        
+        best_set_ = np.argmax(self.scores_)
+        self.best_score_ = self.scores_[best_set_]
+        self.best_features_ = np.delete(range(n_features), features_to_remove[best_set_])
         self.best_estimator_ = clone(self.estimator)
-        self.best_estimator_.fit(X[:, self.best_features_],y,**fit_params)
+        self.best_estimator_.fit(X[:, self.best_features_], y, **fit_params)
         
         del self.sc
         return self   
