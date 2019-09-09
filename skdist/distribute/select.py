@@ -6,7 +6,7 @@ import numpy as np
 
 from sklearn.base import (
     BaseEstimator, ClassifierMixin, 
-    clone, is_classifier
+    is_classifier
     )
 from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import check_is_fitted 
@@ -18,6 +18,8 @@ from itertools import product
 from scipy.sparse import issparse
 
 from .base import _parse_partitions, _clone, _safe_split
+
+__all__ = ["DistFeatureEliminator"]
 
 def _drop_col(X, index):
     """ Drop index columns from numpy array or sparse matrix """
@@ -41,13 +43,14 @@ def _divide_chunks(l, n):
     for i in range(0, len(l), n):  
         yield l[i:i + n] 
 
-class FeatureEliminator(BaseEstimator, ClassifierMixin):
+class DistFeatureEliminator(BaseEstimator, ClassifierMixin):
     """
-    Apply a leave-one-out feature elimination scheme, fitting the
-    base estimator on the input training data once for each left
-    out features. Uses cross validation to score each feature.
-    This results in `n_features * cv` total fits. Fit sets
-    can be distributed with Spark or joblib.
+    Similar to ``sklearn.feature_selection.RFECV`` but with distributed
+    feature set removal and cross validation. Fits the base estimator on 
+    the input training data once for each left out feature sets according 
+    to the `step` and the scoring of the features according to an initial 
+    estimator fit with all features. Uses cross validation to score each 
+    feature set. Results in the fitted base estimator with the best feature set.
     
     Args:
         estimator (estimator object):
@@ -59,7 +62,7 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
             Number of partitions to use for parallelization of parameter
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
-        n_features_to_select (int): Number of features to keep after elimination.
+        min_features_to_select (int): Minimum number of features to keep after elimination.
         step (int or float): If greater than or equal to 1, then `step` 
             corresponds to the (integer) number of features to remove at each iteration.
             If within (0.0, 1.0), then `step` corresponds to the percentage
@@ -77,7 +80,7 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
                  estimator, 
                  sc=None,
                  partitions='auto',
-                 n_features_to_select=None, 
+                 min_features_to_select=None, 
                  step=1,
                  cv=5, 
                  scoring=None, 
@@ -88,7 +91,7 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
         self.estimator = estimator
         self.sc = sc
         self.partitions = partitions
-        self.n_features_to_select = n_features_to_select
+        self.min_features_to_select = min_features_to_select
         self.step = step
         self.cv = cv
         self.scoring = scoring
@@ -98,15 +101,27 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
         self.mask = mask
         
     def fit(self, X, y=None, groups=None, **fit_params):
+        """ 
+        Apply feature elimination routine, ultimately fitting 
+        estimator on the best feature set.
+
+        Args:
+            X (array-like, shape = [n_samples, n_features]): input data
+            y (array-like, shape = [n_samples, ], [n_samples, n_classes]): targets
+            groups (array-like): group labels for the samples used while 
+                splitting the dataset into train/test set
+            **fit_params (dict of string -> object): parameters passed
+                to the `fit` method of the estimator
+        """
         X, y = check_X_y(X, y, "csr", ensure_min_features=2)
         cv = check_cv(self.cv, y, is_classifier(self.estimator))
         scorer = check_scoring(self.estimator, scoring=self.scoring)
 
         n_features = X.shape[1]
-        if self.n_features_to_select is None:
-            n_features_to_select = n_features // 2
+        if self.min_features_to_select is None:
+            min_features_to_select = n_features // 2
         else:
-            n_features_to_select = self.n_features_to_select
+            min_features_to_select = self.min_features_to_select
 
         if 0.0 < self.step < 1.0:
             step = int(max(1, self.step * n_features))
@@ -129,11 +144,11 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
             ranks = np.argsort(safe_sqr(coefs).sum(axis=0))
         else:
             ranks = np.argsort(safe_sqr(coefs))
-        ranks = np.ravel(ranks)[:(n_features - n_features_to_select)]
+        ranks = np.ravel(ranks)[:(n_features - min_features_to_select)]
 
         this_step = 0
         features_to_remove = [np.array([])]
-        while this_step < (n_features - n_features_to_select):
+        while this_step < (n_features - min_features_to_select):
             this_step += step
             features_to_remove.append(ranks[:this_step])
 
@@ -147,7 +162,7 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
                 )
             scores = parallel(
                 delayed(_fit_and_score_one)(
-                    index, clone(base_estimator), X, y, 
+                    index, _clone(base_estimator), X, y, 
                     scorer, train, test, self.verbose,
                     fit_params)
                 for index, (train, test) in fit_sets)
@@ -159,14 +174,14 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
             scores = (
                 self.sc.parallelize(fit_sets, numSlices=partitions)
                 .map(lambda x: [x[0], _fit_and_score_one(
-                    x[0], clone(base_estimator), X, y, scorer, 
+                    x[0], _clone(base_estimator), X, y, scorer, 
                     x[1][0], x[1][1], verbose, fit_params)]).collect()
                 )
             score_sets = []
-            for index in range(n_features):
+            for feat_set in features_to_remove:
                 this_set = []
                 for row in scores:
-                    if row[0] == index:
+                    if (feat_set.shape == row[0].shape) and np.allclose(feat_set, row[0]):
                         this_set.append(row[1])
                 score_sets.append(this_set)
             
@@ -178,8 +193,9 @@ class FeatureEliminator(BaseEstimator, ClassifierMixin):
         best_set_ = np.argmax(self.scores_)
         self.best_score_ = self.scores_[best_set_]
         self.best_features_ = np.delete(range(n_features), features_to_remove[best_set_])
-        self.best_estimator_ = clone(self.estimator)
+        self.best_estimator_ = _clone(self.estimator)
         self.best_estimator_.fit(X[:, self.best_features_], y, **fit_params)
+        self.n_features_ = len(self.best_features_)
         
         del self.sc
         return self   
