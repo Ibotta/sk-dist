@@ -1,6 +1,20 @@
 """
-=================================================
-=================================================
+================================================================
+Approximate RFECV using sk-dist with 46x performance improvement
+================================================================
+
+In this example, we use `make_classification` to build a synthetic
+training data set. It has binary labels and 100k observations.
+The training data has 40 total features with 12 predictive features.
+We use two feature elimination algorithms to try to find the 12
+predictive features, ultimately training the best model
+according to cross validation scores.
+
+The two algorithms ultimately find the 12 predictive features and
+train the best model. The difference is in the runtime.
+
+DistFeatureEliminator - small spark cluster: runtime 3 mins
+RFECV - one core on one machine: runtime 2.4 hours
 
 Example output run:
 

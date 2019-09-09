@@ -51,6 +51,10 @@ class DistFeatureEliminator(BaseEstimator, ClassifierMixin):
     to the `step` and the scoring of the features according to an initial 
     estimator fit with all features. Uses cross validation to score each 
     feature set. Results in the fitted base estimator with the best feature set.
+
+    Roughly approximates `RFECV` particularly as `step` approaches 1 and 
+    `min_features_to_select` approaches 0. The value-add is in the 
+    embarrassingly parallel nature of the `DistFeatureEliminator` algorithm.
     
     Args:
         estimator (estimator object):
