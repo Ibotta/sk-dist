@@ -98,6 +98,11 @@ sc = spark.sparkContext
 
 ### XGBClassifier ###
 
+# sklearn variables
+cv = 5
+clf_scoring = "roc_auc"
+reg_scoring = "neg_mean_squared_error"
+
 # load sample data (binary target)
 data = load_breast_cancer()
 X = data["data"]
@@ -113,7 +118,7 @@ grid = dict(
 ### distributed grid search
 model = DistGridSearchCV(
     XGBClassifier(),
-    grid, sc, cv=5, scoring="roc_auc"
+    grid, sc, cv=cv, scoring=clf_scoring
     )
 # distributed fitting with spark
 model.fit(X,y)
@@ -147,7 +152,7 @@ grid = dict(
 ### distributed grid search
 model = DistGridSearchCV(
     XGBRegressor(objective='reg:squarederror'),
-    grid, sc, cv=5, scoring="neg_mean_squared_error"
+    grid, sc, cv=cv, scoring=reg_scoring
     )
 # distributed fitting with spark
 model.fit(X,y)
