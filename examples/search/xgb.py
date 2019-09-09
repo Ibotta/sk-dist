@@ -13,6 +13,7 @@ trying to train multiple estimators in parallel. Skdist excels in this functiona
 leveraging DistGridSearchCV. In this example, we are able to train 54 unique sets of
 hyperparameters in parallel and return the the best model to the driver.
 
+NOTE: This example uses xgboost==0.90
 
 Here is a sample output run:
 
