@@ -1,1 +1,1 @@
-__all__ = ['search', 'encoder', 'ensemble', 'multiclass', 'select', 'tests', 'predict']
+__all__ = ['search', 'encoder', 'ensemble', 'multiclass', 'eliminate', 'tests', 'predict']

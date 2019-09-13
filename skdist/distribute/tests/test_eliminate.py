@@ -1,5 +1,5 @@
 """
-Test feature selection classes
+Test feature eliminator classes
 """
 
 import numpy as np
@@ -9,8 +9,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import datasets
 
 try:
-    from skdist.distribute import select
-    from skdist.distribute.select import DistFeatureEliminator 
+    from skdist.distribute import eliminate
+    from skdist.distribute.eliminate import DistFeatureEliminator 
     _import_error = None
 except Exception as e:
     _import_error = e
