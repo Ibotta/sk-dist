@@ -1,6 +1,6 @@
 """
 ===============================================================================
-Fit a random forest on the covtype dataset with distributed feature elmiination 
+Fit a random forest on the covtype dataset with distributed feature elimination 
 ===============================================================================
 
 The covtype dataset has 54 dense features:
