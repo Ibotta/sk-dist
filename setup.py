@@ -32,6 +32,20 @@ MIN_PYARROW_VERSION = "0.8.0"
 MIN_PYSPARK_VERSION = "2.4.4"
 MIN_PYTESTSPARK_VERSION = "0.4.5"
 
+install_requires = [
+    "pandas>={0}".format(MIN_PANDAS_VERSION),
+    "numpy>={0}".format(MIN_NUMPY_VERSION),
+    "scipy>={0}".format(MIN_SCIPY_VERSION),
+    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
+    "joblib>={0}".format(MIN_JOBLIB_VERSION)
+]
+
+tests_require = [
+          "pyarrow>={0}".format(MIN_PYARROW_VERSION),
+          "pyspark>={0}".format(MIN_PYSPARK_VERSION),
+          "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
+      ]
+
 def parse_description(description):
     """
     Strip figures and alt text from description
@@ -54,16 +68,7 @@ setup(name=DISTNAME,
       project_urls=PROJECT_URLS,
       packages=find_packages(),
       python_requires=">={0}".format(MIN_PYTHON_VERSION),
-      install_requires=[
-          "pandas>={0}".format(MIN_PANDAS_VERSION),
-          "numpy>={0}".format(MIN_NUMPY_VERSION),
-          "scipy>={0}".format(MIN_SCIPY_VERSION),
-          "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
-          "joblib>={0}".format(MIN_JOBLIB_VERSION)
-      ],
-      tests_require=[
-          "pyarrow>={0}".format(MIN_PYARROW_VERSION),
-          "pyspark>={0}".format(MIN_PYSPARK_VERSION),
-          "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
-      ]
+      install_requires=install_requires,
+      tests_require=tests_require,
+      extras_require=dict(tests=tests_require)
       )
