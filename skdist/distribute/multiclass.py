@@ -19,8 +19,9 @@ from sklearn.utils.validation import check_X_y
 from sklearn.utils.multiclass import check_classification_targets, type_of_target
 from sklearn.model_selection import train_test_split, GroupKFold
 
+from .validation import _check_estimator
+from .utils import _safe_split
 from .base import (
-    _check_estimator, _safe_split, 
     _clone, _get_value, _parse_partitions
     )
 

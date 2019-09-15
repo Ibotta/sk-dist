@@ -21,9 +21,9 @@ from sklearn.tree.tree import DOUBLE, DTYPE
 from sklearn.utils import check_array, check_random_state
 from sklearn.utils.validation import check_is_fitted
 
+from .validation import _check_estimator
 from .base import (
-    _check_estimator, _clone, 
-    _get_value, _parse_partitions
+    _clone, _get_value, _parse_partitions
     )
 
 __all__ = [
