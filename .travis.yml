@@ -1,10 +1,17 @@
 language: python
 jdk: openjdk8
 dist: trusty
-python:
-- '3.5'
-- '3.6'
-- '3.7'
+matrix:
+    include:
+        - python: 3.5
+          dist: trusty
+          sudo: false
+        - python: 3.6
+          dist: trusty
+          sudo: false
+        - python: 3.7
+          dist: xenial
+          sudo: true
 before_install:
   - mkdir -p /opt
   - wget -q -O /opt/spark.tgz http://www.gtlib.gatech.edu/pub/apache/spark/spark-2.4.4/spark-2.4.4-bin-hadoop2.7.tgz
