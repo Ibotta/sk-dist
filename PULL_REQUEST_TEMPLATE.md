@@ -1,7 +1,4 @@
 ## Pull Request Template
-
-Please use this to create a roadmap for your project or to track bugs. A pull request template improves development quality and provides a common guideline for contributors to follow. It also enables to you to reference issues and shows others your development progress.
-
 <!--- Provide a general summary of your changes in the Title above -->
 <!--- If applicable, link to related GitHub Issue  -->
 
