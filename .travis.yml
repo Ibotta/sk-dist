@@ -12,7 +12,6 @@ before_install:
   - export PATH=$PATH:/opt/spark-2.4.4-bin-hadoop2.7/bin
 install:
 - pip install .
-- pip install pyarrow>=0.8.0
 script:
 - build_tools/test_script.sh
 deploy:
