@@ -1,5 +1,6 @@
 language: python
 jdk: openjdk8
+dist: trusty
 python:
 - '3.5'
 - '3.6'
