@@ -28,6 +28,8 @@ MIN_NUMPY_VERSION = "0.17.0"
 MIN_SCIPY_VERSION = "1.3.1"
 MIN_SKLEARN_VERSION = "0.21.3"
 MIN_JOBLIB_VERSION = "0.11"
+MIN_PYSPARK_VERSION = "2.4.4"
+MIN_PYTESTSPARK_VERSION = "0.4.5"
 
 def parse_description(description):
     """
@@ -35,7 +37,7 @@ def parse_description(description):
     """
     return "\n".join(
         [
-        a for a in description.split("\n") 
+        a for a in description.split("\n")
         if ("figure::" not in a) and (":alt:" not in a)
         ])
 
@@ -52,9 +54,11 @@ setup(name=DISTNAME,
       packages=find_packages(),
       python_requires=">={0}".format(MIN_PYTHON_VERSION),
       install_requires=[
-          "pandas>={0}".format(MIN_PANDAS_VERSION),
-          "numpy>={0}".format(MIN_NUMPY_VERSION),
-          "scipy>={0}".format(MIN_SCIPY_VERSION),
-          "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
-          "joblib>={0}".format(MIN_JOBLIB_VERSION)         
+          f"pandas>={MIN_PANDAS_VERSION}",
+          f"numpy>={MIN_NUMPY_VERSION}",
+          f"scipy>={MIN_SCIPY_VERSION}",
+          f"scikit-learn>={MIN_SKLEARN_VERSION}",
+          f"joblib>={MIN_JOBLIB_VERSION}",
+          f"pyspark>={MIN_PYSPARK_VERSION}",
+          f"pytest-spark>={MIN_PYTESTSPARK_VERSION}"
       ])
