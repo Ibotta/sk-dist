@@ -4,8 +4,11 @@ Distributed grid search meta-estimators
 
 import time
 import numbers
+import random
 import numpy as np
+import pandas as pd
 
+from copy import copy
 from abc import ABCMeta
 from joblib import Parallel, delayed
 from sklearn.model_selection import (
@@ -13,8 +16,10 @@ from sklearn.model_selection import (
     RandomizedSearchCV, ParameterSampler, 
     check_cv
     )
+from sklearn.metrics.scorer import check_scoring
 from sklearn.base import BaseEstimator, is_classifier
-from sklearn.utils.validation import indexable
+from sklearn.utils.metaestimators import if_delegate_has_method
+from sklearn.utils.validation import indexable, check_is_fitted
 from sklearn.utils.fixes import MaskedArray
 
 from functools import partial
@@ -22,12 +27,17 @@ from scipy.stats import rankdata
 from itertools import product
 from collections import defaultdict
 
-from .validation import _check_estimator
+from .validation import (
+    _check_estimator, _check_base_estimator, 
+    _validate_params, _validate_models, 
+    _validate_names, _validate_estimators, 
+    _check_n_iter
+    )
 from .utils import (
     _multimetric_score, _num_samples, 
     _aggregate_score_dicts, _score, 
     _check_multimetric_scoring,
-    _safe_split
+    _safe_split, _dict_slice_remove
     )
 from .base import (
     _clone, _get_value, _parse_partitions
@@ -35,8 +45,221 @@ from .base import (
 
 __all__ = [
     "DistGridSearchCV", 
-    "DistRandomizedSearchCV"
+    "DistRandomizedSearchCV",
+    "DistEvolutionarySearch"
 ]
+
+def _get_samples(n, max_len, max_tries, sample_gen):
+    """ 
+    Draws from a samples generator until either a 
+    certain number of unique samples is found, 
+    or a max number of attempts is reached.
+    """
+    samples = sample_gen.__next__()
+    n_tries = 0
+    while (n_tries < max_tries) and (len(samples) < max_len):
+        new_samples = _dict_slice_remove(sample_gen.__next__(), samples)
+        random.shuffle(new_samples)
+        samples.extend(new_samples[:(max_len - len(samples))])
+        n_tries += 1
+    return samples
+
+def _sample_one(n_iter, param_distributions, random_state=None):
+    """ Sample from param distributions for one model """
+    return list(ParameterSampler(
+        param_distributions, 
+        n_iter=_check_n_iter(n_iter, param_distributions), 
+        random_state=random_state
+        ))
+
+def _raw_sampler(models, n_params=None, n=None, 
+                 random_state=None):
+    """ Sample from param distributions for each model """
+    if n_params is None:
+        if n is None:
+            raise Exception(
+                "Must supply either 'n_params' or 'n' as arguments")
+        else:
+            n_params = [n]*len(models)
+    param_sets = []
+    for index in range(len(models)):
+        sampler = _sample_one(
+            n_params[index], models[index][2], 
+            random_state=random_state
+            )
+        for sample_index in range(len(sampler)):
+            param_set = {
+                "model_index": index, 
+                "params_index": sample_index, 
+                "param_set": sampler[sample_index]
+                }
+            param_sets.append(param_set)
+    return param_sets
+
+def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
+    """
+    Fits the given estimator on one fold of training data.
+    Scores the fitted estimator against the test fold.
+    """
+    train = fit_set[0][0]
+    test = fit_set[0][1]
+    estimator_ = _clone(models[fit_set[1]["model_index"]][1])
+    parameters = fit_set[1]["param_set"]
+    X_train, y_train = _safe_split(estimator_, X, y, train)
+    X_test, y_test = _safe_split(estimator_, X, y, test, train)
+    if parameters is not None:
+        estimator_.set_params(**parameters)
+    estimator_.fit(X_train, y_train, **fit_params)
+    scorer = check_scoring(estimator_, scoring=scoring)
+    is_multimetric = not callable(scorer)
+    out_dct = fit_set[1]
+    out_dct["score"] = _score(
+        estimator_, X_test, y_test, 
+        scorer, is_multimetric
+        )
+    return out_dct
+
+def _fit_batch(X, y, folds, param_sets, models, n, results, 
+               batch, scoring, random_state=None, mutate_prob=0.75, 
+               build_new=True, sc=None, partitions="auto", 
+               n_jobs=None, max_tries=10, fit_params={}):
+    """
+    Fits one batch of sampled param sets for each model.
+    Computes the mutated samples for the next batch based
+    on the scores of the current batch. Updates global
+    results DataFrame.
+    """
+    fit_sets = product(folds, param_sets)
+    if sc is None:
+        scores = Parallel(n_jobs=n_jobs)(
+            delayed(_fit_one_fold)(
+                x, models, X, y, 
+                scoring, fit_params
+                )
+            for x in fit_sets)
+    else:
+        fit_sets = list(fit_sets)
+        partitions = _parse_partitions(partitions, len(fit_sets))
+        scores = (
+            sc
+            .parallelize(fit_sets, numSlices=partitions)
+            .map(lambda x: _fit_one_fold(x, models, X, y, scoring, fit_params))
+            .collect()
+            )
+    param_results = _get_results(scores)
+    param_results["batch"] = batch
+    results = results.append(param_results)
+    model_results = (
+        results
+        .groupby(["model_index"])["score"]
+        .max()
+        .reset_index()
+        .sort_values("model_index")
+        )
+    if build_new:
+        def _sample_generator(models, n, random_state, max_tries): 
+            for i in range(max_tries):
+                rs = None if random_state is None else random_state*(i+1)
+                new_param_sets_raw = _mutation_sampler(
+                    results, model_results, 
+                    n, models, random_state=rs, 
+                    mutate_prob=mutate_prob
+                    )
+                cross_check = (
+                    results[["model_index", "param_set"]]
+                    .to_dict(orient="records")
+                    )
+                new_param_sets = _dict_slice_remove(
+                    new_param_sets_raw, cross_check)
+                yield new_param_sets
+                
+        max_len = n*len(models)
+        gen = _sample_generator(
+            models, n=n, random_state=random_state, 
+            max_tries=(max_tries+1)
+            )
+        new_param_sets = _get_samples(n, max_len, max_tries, gen)
+    else:
+        new_param_sets = []
+    return results, model_results, new_param_sets
+
+def _print_batch_dist(models, param_sets):
+    """ Prints batch information """
+    for index in range(len(models)):
+        print("{0}: {1}".format(
+            models[index][0], 
+            len([a for a in param_sets if a["model_index"] == index])
+            ))
+        
+def _get_results(scores):
+    """ Converts 'scores' list to pandas DataFrame """
+    cols = [
+        "model_index", "params_index", 
+        "param_set", "score"
+        ]
+    df = (
+        pd.DataFrame(scores, columns=cols)
+        .sort_values(["model_index", "params_index"])
+        )
+    if len(df) == 0:
+        return pd.DataFrame(columns=cols)
+    return (
+        df
+        .groupby(["model_index", "params_index"])
+        .agg({"score": "mean", "param_set": "first"})
+        .reset_index()
+        .sort_values(["model_index", "params_index"])
+        [cols]
+        )
+
+def _mutation_sampler(param_results, model_results, n, models, 
+                      random_state=None, mutate_prob=0.75):
+    """
+    Adjusts number of param sets per model, builds new
+    param sets per model, and mutates those param sets
+    according to the scores of the previous runs for each
+    model.
+    """
+    score_arr = model_results["score"]**10
+    n_params = list(map(
+        int, np.round((score_arr / np.sum(score_arr))*(n*len(score_arr)))))
+    param_sets = []
+    for model_index in range(len(models)):
+        new_params = n_params[model_index]
+        mutation_distributions = (
+            param_results[param_results["model_index"] == model_index]
+            [["score", "param_set"]]
+            )
+        new_samples = _sample_one(
+            new_params, models[model_index][2], 
+            random_state=random_state
+            )
+        if len(new_samples) > 0:
+            param_score_arr = mutation_distributions["score"].values**10
+            mutation_distribution_arr = (
+                param_score_arr / 
+                np.sum(param_score_arr)
+                )
+            mutation_guide = {}
+            for key in new_samples[0].keys():
+                vals = [
+                    a[key] 
+                    for a in mutation_distributions["param_set"]
+                    ]
+                mutation_guide[key] = np.random.choice(
+                    vals, new_params, p=mutation_distribution_arr)
+            for sample_index in range(len(new_samples)):
+                updated_sample = copy(new_samples[sample_index])
+                for key in mutation_guide.keys():
+                    if np.random.rand() > (1-mutate_prob):
+                        updated_sample[key] = mutation_guide[key][sample_index]
+                param_set = {
+                    "model_index": model_index, 
+                    "params_index": sample_index, 
+                    "param_set": updated_sample
+                    }
+                param_sets.append(param_set)
+    return param_sets
 
 def _fit_and_score(estimator, X, y, scorer, train, test, verbose,
                    parameters, fit_params, return_train_score=False,
@@ -495,3 +718,169 @@ class DistRandomizedSearchCV(DistBaseSearchCV, RandomizedSearchCV):
         return ParameterSampler(
             self.param_distributions, self.n_iter,
             random_state=self.random_state)
+
+class DistEvolutionarySearch(BaseEstimator, metaclass=ABCMeta):
+    """
+    TODO: Docstring
+    """
+    def __init__(self, 
+                 models,
+                 sc=None,
+                 partitions="auto",
+                 mutate_prob=0.75,
+                 cv=5,
+                 scoring=None,
+                 n=4,
+                 random_state=None,
+                 n_iter=3,
+                 max_tries=10,
+                 early_stopping=True,
+                 verbose=0, 
+                 refit=True, 
+                 n_jobs=None, 
+                 pre_dispatch='2*n_jobs'):
+        self.models = models
+        self.sc = sc
+        self.partitions = partitions
+        self.mutate_prob = mutate_prob
+        self.cv = cv
+        self.scoring = scoring
+        self.n = n
+        self.random_state = random_state
+        self.n_iter = n_iter
+        self.max_tries = max_tries
+        self.early_stopping = early_stopping
+        self.verbose = verbose
+        self.refit = refit 
+        self.n_jobs = n_jobs 
+        self.pre_dispatch = pre_dispatch
+        
+    def fit(self, X, y=None, groups=None, **fit_params):
+        _check_estimator(self, verbose=self.verbose)
+        models = _validate_models(self.models, self)
+        cv = check_cv(
+            self.cv, y, classifier=is_classifier(models[0][1]))
+        folds = list(cv.split(X,y,groups))
+        results = pd.DataFrame()
+        
+        def _sample_generator(models, n, random_state, max_tries): 
+            for i in range(max_tries):
+                rs = None if random_state is None else random_state*(i+1)
+                yield _raw_sampler(
+                    models, n=n, random_state=random_state)
+                
+        max_len = self.n*len(models)
+        gen = _sample_generator(
+            models, n=self.n, random_state=self.random_state, 
+            max_tries=(self.max_tries+1)
+            )
+        param_sets = _get_samples(self.n, max_len, self.max_tries, gen)
+        
+        old_results = np.array([-1e30]*len(models))
+        for batch in range(self.n_iter):
+            if len(param_sets) == 0:
+                if self.verbose:
+                    print("Stopping early; no more param sets to fit")
+                break
+            if self.verbose:
+                print("-- Batch: {0} --".format(batch))
+                _print_batch_dist(models, param_sets)
+            results, model_results, param_sets = _fit_batch(
+                X, y, folds, param_sets, models, self.n, 
+                results, batch, self.scoring,
+                sc=self.sc, n_jobs=self.n_jobs,
+                partitions=self.partitions,
+                random_state=self.random_state, 
+                mutate_prob=self.mutate_prob,
+                max_tries=self.max_tries,
+                build_new=(batch < (self.n_iter - 1)),
+                fit_params=fit_params
+                )
+            if self.early_stopping:
+                new_results = model_results["score"].values 
+                if np.all(new_results <= old_results):
+                    if self.verbose:
+                        print("Stopping early; results are not improving")
+                    break
+                old_results = copy(new_results)
+            if self.verbose:
+                print(model_results)
+        
+        best_index = np.argmax(results["score"].values)
+        self.best_model_index_ = results.iloc[best_index]["model_index"]
+        self.best_model_name_ = models[self.best_model_index_][0]
+        self.best_params_ = results.iloc[best_index]["param_set"]
+        self.best_batch_ = results.iloc[best_index]["batch"]
+        self.best_score_ = results.iloc[best_index]["score"]
+        self.worst_score_ = results.iloc[best_index]["score"]
+        
+        results["rank_test_score"] = np.asarray(
+            rankdata(-results["score"].values), 
+            dtype=np.int32
+            )
+        results["mean_test_score"] = results["score"]
+        results["params"] = results["param_set"]
+        results["model_name"] = (
+            results["model_index"]
+            .apply(lambda x: models[x][0])
+            )
+        result_cols = [
+            "model_index", "model_name", "batch", 
+            "params", "rank_test_score", "mean_test_score"
+            ]
+        self.cv_results_ = results[result_cols].to_dict(orient="list")
+        
+        if self.refit:
+            self.best_estimator_ = _clone(models[self.best_model_index_][1])
+            self.best_estimator_.set_params(**self.best_params_)
+            self.best_estimator_.fit(X, y)
+        
+        del self.sc
+        return self
+    
+    def _check_is_fitted(self, method_name):
+        if not self.refit:
+            raise NotFittedError('This %s instance was initialized '
+                                 'with refit=False. %s is '
+                                 'available only after refitting on the best '
+                                 'parameters. You can refit an estimator '
+                                 'manually using the ``best_params_`` '
+                                 'attribute'
+                                 % (type(self).__name__, method_name))
+        else:
+            check_is_fitted(self, 'best_estimator_')
+    
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def predict(self, X):
+        self._check_is_fitted('predict')
+        return self.best_estimator_.predict(X)
+
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def predict_proba(self, X):
+        self._check_is_fitted('predict_proba')
+        return self.best_estimator_.predict_proba(X)
+
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def predict_log_proba(self, X):
+        self._check_is_fitted('predict_log_proba')
+        return self.best_estimator_.predict_log_proba(X)
+
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def decision_function(self, X):
+        self._check_is_fitted('decision_function')
+        return self.best_estimator_.decision_function(X)
+
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def transform(self, X):
+        self._check_is_fitted('transform')
+        return self.best_estimator_.transform(X)
+
+    @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
+    def inverse_transform(self, Xt):
+        self._check_is_fitted('inverse_transform')
+        return self.best_estimator_.inverse_transform(Xt)
+
+    @property
+    def classes_(self):
+        self._check_is_fitted("classes_")
+        return self.best_estimator_.classes_

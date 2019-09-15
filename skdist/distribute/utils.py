@@ -184,3 +184,17 @@ def _safe_split(estimator, X, y, indices, train_indices=None):
     else:
         y_subset = None
     return X_subset, y_subset
+
+def _dict_slice_remove(a, b, cols=["model_index", "param_set"]):
+    """ 
+    Remove dictionary records from list 'a' 
+    if the records appear in 'b' 
+    for the given columns 'cols'.
+    """
+    b_ = [{k:d[k] for k in cols} for d in b]
+    a_ = []
+    for d in a:
+        if {k:d[k] for k in cols} not in b_:
+            a_.append(d)
+    return a_
+
