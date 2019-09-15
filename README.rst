@@ -130,15 +130,6 @@ With ``pytest`` installed, you can run tests locally:
 
     pytest sk-dist
 
-Testing Caveats
-^^^^^^^^^^^^^^^
-
-A note about unit testing: Unit tests are only written to test
-functionality that (1) does not require a ``sparkContext`` and (2) has
-no dependencies outside of the package requirements. This means that
-much of the distributed spark functionality is not included in unit
-tests.
-
 Examples
 ^^^^^^^^
 
