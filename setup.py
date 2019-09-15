@@ -59,9 +59,7 @@ setup(name=DISTNAME,
           "numpy>={0}".format(MIN_NUMPY_VERSION),
           "scipy>={0}".format(MIN_SCIPY_VERSION),
           "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
-          "joblib>={0}".format(MIN_JOBLIB_VERSION),
-          "pyspark>={0}".format(MIN_PYSPARK_VERSION),
-          "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
+          "joblib>={0}".format(MIN_JOBLIB_VERSION)
       ],
       tests_require=[
           "pyarrow>={0}".format(MIN_PYARROW_VERSION),
