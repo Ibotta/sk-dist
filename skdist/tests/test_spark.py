@@ -111,33 +111,33 @@ def test_multiclass(spark_session):
 
     assert preds.shape == y_test.shape
 
-# def test_predict(spark_session):
-#     sc = spark_session.sparkContext
-#
-#     # simple 2-D numpy features
-#     data = load_digits()
-#     X = data["data"]
-#     y = data["target"]
-#     model = LogisticRegression(
-#         solver="liblinear",
-#         multi_class="auto"
-#     )
-#     model.fit(X, y)
-#
-#     # get UDFs with default 'numpy' feature types
-#     predict = get_prediction_udf(model, method="predict")
-#     predict_proba = get_prediction_udf(model, method="predict_proba")
-#
-#     # create PySpark DataFrame from features
-#     pdf = pd.DataFrame(X)
-#     sdf = spark_session.createDataFrame(pdf)
-#     cols = [F.col(str(c)) for c in sdf.columns]
-#
-#     # apply predict UDFs and select prediction output
-#     prediction_df = (
-#         sdf
-#             .withColumn("scores", predict_proba(*cols))
-#             .withColumn("preds", predict(*cols))
-#             .select("preds", "scores")
-#     )
-#     assert prediction_df.count() == X.shape[0]
+def test_predict(spark_session):
+    sc = spark_session.sparkContext
+
+    # simple 2-D numpy features
+    data = load_digits()
+    X = data["data"]
+    y = data["target"]
+    model = LogisticRegression(
+        solver="liblinear",
+        multi_class="auto"
+    )
+    model.fit(X, y)
+
+    # get UDFs with default 'numpy' feature types
+    predict = get_prediction_udf(model, method="predict")
+    predict_proba = get_prediction_udf(model, method="predict_proba")
+
+    # create PySpark DataFrame from features
+    pdf = pd.DataFrame(X)
+    sdf = spark_session.createDataFrame(pdf)
+    cols = [F.col(str(c)) for c in sdf.columns]
+
+    # apply predict UDFs and select prediction output
+    prediction_df = (
+        sdf
+            .withColumn("scores", predict_proba(*cols))
+            .withColumn("preds", predict(*cols))
+            .select("preds", "scores")
+    )
+    assert prediction_df.count() == X.shape[0]
