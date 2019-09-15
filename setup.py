@@ -54,11 +54,11 @@ setup(name=DISTNAME,
       packages=find_packages(),
       python_requires=">={0}".format(MIN_PYTHON_VERSION),
       install_requires=[
-          f"pandas>={MIN_PANDAS_VERSION}",
-          f"numpy>={MIN_NUMPY_VERSION}",
-          f"scipy>={MIN_SCIPY_VERSION}",
-          f"scikit-learn>={MIN_SKLEARN_VERSION}",
-          f"joblib>={MIN_JOBLIB_VERSION}",
-          f"pyspark>={MIN_PYSPARK_VERSION}",
-          f"pytest-spark>={MIN_PYTESTSPARK_VERSION}"
+          "pandas>={0}".format(MIN_PANDAS_VERSION),
+          "numpy>={0}".format(MIN_NUMPY_VERSION),
+          "scipy>={0}".format(MIN_SCIPY_VERSION),
+          "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
+          "joblib>={0}".format(MIN_JOBLIB_VERSION),
+          "pyspark>={0}".format(MIN_PYSPARK_VERSION),
+          "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
       ])
