@@ -41,10 +41,10 @@ install_requires = [
 ]
 
 tests_require = [
-          "pyarrow>={0}".format(MIN_PYARROW_VERSION),
-          "pyspark>={0}".format(MIN_PYSPARK_VERSION),
-          "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
-      ]
+    "pyarrow>={0}".format(MIN_PYARROW_VERSION),
+    "pyspark>={0}".format(MIN_PYSPARK_VERSION),
+    "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
+]
 
 def parse_description(description):
     """
