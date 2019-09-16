@@ -34,7 +34,7 @@ print(__doc__)
 import time
 import numpy as np
 
-from skdist.distribute.select import DistFeatureEliminator
+from skdist.distribute.eliminate import DistFeatureEliminator
 from sklearn.feature_selection import RFECV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
