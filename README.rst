@@ -9,7 +9,7 @@ sk-dist: Distributed scikit-learn meta-estimators in PySpark
 What is it?
 -----------
 
-``sk-dist`` is a Python module for machine learning built on top of
+``sk-dist`` is a Python package for machine learning built on top of
 `scikit-learn <https://scikit-learn.org/stable/index.html>`__ and is
 distributed under the `Apache 2.0 software
 license <https://github.com/Ibotta/sk-dist/blob/master/LICENSE>`__. The
