@@ -16,7 +16,9 @@ license <https://github.com/Ibotta/sk-dist/blob/master/LICENSE>`__. The
 ``sk-dist`` module can be thought of as "distributed scikit-learn" as
 its core functionality is to extend the ``scikit-learn`` built-in
 ``joblib`` parallelization of meta-estimator training to
-`spark <https://spark.apache.org/>`__.
+`spark <https://spark.apache.org/>`__. The primary use case of 
+``sk-dist`` is to train large numbers of machine learning models in 
+parallel, combining ``scikit-learn`` and ``spark``.  
 
 Check out the `blog post <https://medium.com/building-ibotta/train-sklearn-100x-faster-bec530fc1f45>`__ 
 for more information on the motivation and use cases of ``sk-dist``.
