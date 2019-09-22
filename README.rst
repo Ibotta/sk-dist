@@ -151,7 +151,7 @@ on how to use ``sk-dist`` in practice. Examples of note are:
 -  `Spark ML Benchmark Comparison <https://github.com/Ibotta/sk-dist/blob/master/examples/search/spark_ml.py>`__
 -  `Encoderizer with 20 Newsgroups <https://github.com/Ibotta/sk-dist/blob/master/examples/encoder/basic_usage.py>`__
 -  `One-Vs-Rest vs One-Vs-One <https://github.com/Ibotta/sk-dist/blob/master/examples/multiclass/basic_usage.py>`__
--  `Large Scale Sklearn Prediction with PySpark UDFs <https://github.com/Ibotta/sk-dist/blob/master/examples/multiclass/basic_usage.py>`_
+-  `Large Scale Sklearn Prediction with PySpark UDFs <https://github.com/Ibotta/sk-dist/blob/master/examples/predict/basic_usage.py>`_
 
 Background
 ----------
