@@ -151,7 +151,14 @@ The project was started at `Ibotta
 Inc. <https://medium.com/building-ibotta>`__ on the machine learning
 team and open sourced in 2019.
 
-It is currently maintained by the machine learning team at Ibotta.
+It is currently maintained by the machine learning team at Ibotta. Special
+thanks to those who contributed to ``sk-dist`` while it was initially
+in development at Ibotta:
+
+-  `Evan Harris <https://github.com/denver1117>`__
+-  `Nicole Woytarowicz <https://github.com/nicolele>`__
+-  `Mike Lewis <https://github.com/Mikelew88>`__
+-  `Bobby Crimi <https://github.com/rpcrimi>`__
 
 .. figure:: https://github.com/Ibotta/sk-dist/blob/master/doc/images/ibottaml.png
    :alt: IbottaML
