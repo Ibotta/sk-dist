@@ -19,7 +19,7 @@ its core functionality is to extend the ``scikit-learn`` built-in
 `spark <https://spark.apache.org/>`__. A popular use case is the 
 parallelization of grid search as shown here:
 
-.. figure:: https://github.com/Ibotta/sk-dist/blob/readme_enhancements/doc/images/grid_search.png
+.. figure:: https://github.com/Ibotta/sk-dist/blob/master/doc/images/grid_search.png
    :alt: sk-dist
 
 Check out the `blog post <https://medium.com/building-ibotta/train-sklearn-100x-faster-bec530fc1f45>`__ 
