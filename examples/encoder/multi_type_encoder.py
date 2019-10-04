@@ -19,7 +19,6 @@ FeatureUnion pipeline.
 Here is a sample output run:
 
 ['text_col_word_vec', 'categorical_str_col_onehot', 'categorical_int_col_onehot', 'numeric_col_scaler', 'dict_col_dict_encoder', 'multilabel_col_multihot']
-
 1.0
 """
 print(__doc__)
@@ -84,6 +83,4 @@ model = DistGridSearchCV(
     )
 
 model.fit(df_transformed, df["target"])
-
 print(model.best_score_)
-
