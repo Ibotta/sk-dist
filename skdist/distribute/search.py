@@ -46,23 +46,8 @@ from .base import (
 __all__ = [
     "DistGridSearchCV", 
     "DistRandomizedSearchCV",
-    "DistEvolutionarySearch"
+    "DistMultiModelSearch"
 ]
-
-def _get_samples(n, max_len, max_tries, sample_gen):
-    """ 
-    Draws from a samples generator until either a 
-    certain number of unique samples is found, 
-    or a max number of attempts is reached.
-    """
-    samples = sample_gen.__next__()
-    n_tries = 0
-    while (n_tries < max_tries) and (len(samples) < max_len):
-        new_samples = _dict_slice_remove(sample_gen.__next__(), samples)
-        random.shuffle(new_samples)
-        samples.extend(new_samples[:(max_len - len(samples))])
-        n_tries += 1
-    return samples
 
 def _sample_one(n_iter, param_distributions, random_state=None):
     """ Sample from param distributions for one model """
@@ -119,15 +104,13 @@ def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
         )
     return out_dct
 
-def _fit_batch(X, y, folds, param_sets, models, n, results, 
-               batch, scoring, random_state=None, mutate_prob=0.75, 
-               build_new=True, sc=None, partitions="auto", 
-               n_jobs=None, max_tries=10, fit_params={}):
+def _fit_batch(X, y, folds, param_sets, models, n, 
+               scoring, random_state=None, sc=None, 
+               partitions="auto", n_jobs=None, fit_params={}):
     """
-    Fits one batch of sampled param sets for each model.
-    Computes the mutated samples for the next batch based
-    on the scores of the current batch. Updates global
-    results DataFrame.
+    Fits a batch of combinations of parameter sets, models
+    and cross validation folds. Returns results pandas
+    DataFrames.
     """
     fit_sets = product(folds, param_sets)
     if sc is None:
@@ -147,50 +130,15 @@ def _fit_batch(X, y, folds, param_sets, models, n, results,
             .collect()
             )
     param_results = _get_results(scores)
-    param_results["batch"] = batch
-    results = results.append(param_results)
     model_results = (
-        results
+        param_results
         .groupby(["model_index"])["score"]
         .max()
         .reset_index()
         .sort_values("model_index")
         )
-    if build_new:
-        def _sample_generator(models, n, random_state, max_tries): 
-            for i in range(max_tries):
-                rs = None if random_state is None else random_state*(i+1)
-                new_param_sets_raw = _mutation_sampler(
-                    results, model_results, 
-                    n, models, random_state=rs, 
-                    mutate_prob=mutate_prob
-                    )
-                cross_check = (
-                    results[["model_index", "param_set"]]
-                    .to_dict(orient="records")
-                    )
-                new_param_sets = _dict_slice_remove(
-                    new_param_sets_raw, cross_check)
-                yield new_param_sets
-                
-        max_len = n*len(models)
-        gen = _sample_generator(
-            models, n=n, random_state=random_state, 
-            max_tries=(max_tries+1)
-            )
-        new_param_sets = _get_samples(n, max_len, max_tries, gen)
-    else:
-        new_param_sets = []
-    return results, model_results, new_param_sets
+    return param_results, model_results
 
-def _print_batch_dist(models, param_sets):
-    """ Prints batch information """
-    for index in range(len(models)):
-        print("{0}: {1}".format(
-            models[index][0], 
-            len([a for a in param_sets if a["model_index"] == index])
-            ))
-        
 def _get_results(scores):
     """ Converts 'scores' list to pandas DataFrame """
     cols = [
@@ -211,55 +159,6 @@ def _get_results(scores):
         .sort_values(["model_index", "params_index"])
         [cols]
         )
-
-def _mutation_sampler(param_results, model_results, n, models, 
-                      random_state=None, mutate_prob=0.75):
-    """
-    Adjusts number of param sets per model, builds new
-    param sets per model, and mutates those param sets
-    according to the scores of the previous runs for each
-    model.
-    """
-    score_arr = model_results["score"]**10
-    n_params = list(map(
-        int, np.round((score_arr / np.sum(score_arr))*(n*len(score_arr)))))
-    param_sets = []
-    for model_index in range(len(models)):
-        new_params = n_params[model_index]
-        mutation_distributions = (
-            param_results[param_results["model_index"] == model_index]
-            [["score", "param_set"]]
-            )
-        new_samples = _sample_one(
-            new_params, models[model_index][2], 
-            random_state=random_state
-            )
-        if len(new_samples) > 0:
-            param_score_arr = mutation_distributions["score"].values**10
-            mutation_distribution_arr = (
-                param_score_arr / 
-                np.sum(param_score_arr)
-                )
-            mutation_guide = {}
-            for key in new_samples[0].keys():
-                vals = [
-                    a[key] 
-                    for a in mutation_distributions["param_set"]
-                    ]
-                mutation_guide[key] = np.random.choice(
-                    vals, new_params, p=mutation_distribution_arr)
-            for sample_index in range(len(new_samples)):
-                updated_sample = copy(new_samples[sample_index])
-                for key in mutation_guide.keys():
-                    if np.random.rand() > (1-mutate_prob):
-                        updated_sample[key] = mutation_guide[key][sample_index]
-                param_set = {
-                    "model_index": model_index, 
-                    "params_index": sample_index, 
-                    "param_set": updated_sample
-                    }
-                param_sets.append(param_set)
-    return param_sets
 
 def _fit_and_score(estimator, X, y, scorer, train, test, verbose,
                    parameters, fit_params, return_train_score=False,
@@ -719,22 +618,56 @@ class DistRandomizedSearchCV(DistBaseSearchCV, RandomizedSearchCV):
             self.param_distributions, self.n_iter,
             random_state=self.random_state)
 
-class DistEvolutionarySearch(BaseEstimator, metaclass=ABCMeta):
+class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
     """
-    TODO: Docstring
+    Distributed multi-model search meta-estimator. Similar to 
+    `DistRandomizedSearchCV` but with handling for multiple models.
+    Takes a `models` input containing a list of tuples, each with a 
+    string name, instantiated estimator object, and parameter set
+    dictionary for random search.
+
+    The fit method will compute a cross validation score for each
+    estimator/parameter set combination after randomly sampling from
+    the parameter set for each estimator. The best estimator/parameter
+    set combination will be refit if appropriate. The process is distrubuted
+    with spark if a sparkContext is provided, else joblib is used.
+
+    Args:
+        models (array-like): List of tuples containing estimator and parameter
+            set information to generate candidates. Each tuple is of the form:
+            ('name' <str>, 'estimator' <sklearn Estimator>, 'param_set' <dict>)
+            For example: ('rf', RandomForestClassifier(), {'max_depth': [5,10]})
+        sc (sparkContext): Spark context for spark broadcasting and rdd operations.
+        partitions (int or 'auto'): default 'auto'
+            Number of partitions to use for parallelization of parameter
+            search space. Integer values or None will be used directly for `numSlices`,
+            while 'auto' will set `numSlices` to the number required fits.
+        n (int): Number of parameter sets to sample from parameter space for each
+            estimator.
+        cv (int, cross-validation generator or an iterable): Determines the 
+            cross-validation splitting strategy.
+        scoring (string, callable, list/tuple, dict or None): A single string or a 
+            callable to evaluate the predictions on the test set. If None, 
+            the estimator's score method is used.
+        random_state (int): Random state used throughout to ensure consistent runs.
+        verbose (int, bool): Used to indicate level of stdout logging. 
+        refit (bool): Refits best estimator at the end of fit method.
+        n_jobs (int): Number of jobs to run in parallel. Only used if sc=None.
+            ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+            ``-1`` means using all processors. 
+        pre_dispatch (int): Controls the number of jobs that get dispatched 
+            during parallel execution. Reducing this number can be useful 
+            to avoid an explosion of memory consumption when more jobs 
+            get dispatched than CPUs can process. Only used if sc=None. 
     """
     def __init__(self, 
                  models,
                  sc=None,
                  partitions="auto",
-                 mutate_prob=0.75,
+                 n=5,
                  cv=5,
                  scoring=None,
-                 n=4,
                  random_state=None,
-                 n_iter=3,
-                 max_tries=10,
-                 early_stopping=True,
                  verbose=0, 
                  refit=True, 
                  n_jobs=None, 
@@ -742,14 +675,10 @@ class DistEvolutionarySearch(BaseEstimator, metaclass=ABCMeta):
         self.models = models
         self.sc = sc
         self.partitions = partitions
-        self.mutate_prob = mutate_prob
+        self.n = n
         self.cv = cv
         self.scoring = scoring
-        self.n = n
         self.random_state = random_state
-        self.n_iter = n_iter
-        self.max_tries = max_tries
-        self.early_stopping = early_stopping
         self.verbose = verbose
         self.refit = refit 
         self.n_jobs = n_jobs 
@@ -763,54 +692,27 @@ class DistEvolutionarySearch(BaseEstimator, metaclass=ABCMeta):
         folds = list(cv.split(X,y,groups))
         results = pd.DataFrame()
         
-        def _sample_generator(models, n, random_state, max_tries): 
-            for i in range(max_tries):
-                rs = None if random_state is None else random_state*(i+1)
-                yield _raw_sampler(
-                    models, n=n, random_state=random_state)
+        def _sample_generator(models, n, random_state): 
+            rs = None if random_state is None else random_state*(i+1)
+            yield _raw_sampler(models, n=n, random_state=random_state)
                 
-        max_len = self.n*len(models)
-        gen = _sample_generator(
-            models, n=self.n, random_state=self.random_state, 
-            max_tries=(self.max_tries+1)
+        sample_gen = _sample_generator(
+            models, n=self.n, random_state=self.random_state)
+        param_sets = list(sample_gen)[0]
+        results, model_results = _fit_batch(
+            X, y, folds, param_sets, models, self.n, 
+            self.scoring, sc=self.sc, n_jobs=self.n_jobs,
+            partitions=self.partitions,
+            random_state=self.random_state, 
+            fit_params=fit_params
             )
-        param_sets = _get_samples(self.n, max_len, self.max_tries, gen)
-        
-        old_results = np.array([-1e30]*len(models))
-        for batch in range(self.n_iter):
-            if len(param_sets) == 0:
-                if self.verbose:
-                    print("Stopping early; no more param sets to fit")
-                break
-            if self.verbose:
-                print("-- Batch: {0} --".format(batch))
-                _print_batch_dist(models, param_sets)
-            results, model_results, param_sets = _fit_batch(
-                X, y, folds, param_sets, models, self.n, 
-                results, batch, self.scoring,
-                sc=self.sc, n_jobs=self.n_jobs,
-                partitions=self.partitions,
-                random_state=self.random_state, 
-                mutate_prob=self.mutate_prob,
-                max_tries=self.max_tries,
-                build_new=(batch < (self.n_iter - 1)),
-                fit_params=fit_params
-                )
-            if self.early_stopping:
-                new_results = model_results["score"].values 
-                if np.all(new_results <= old_results):
-                    if self.verbose:
-                        print("Stopping early; results are not improving")
-                    break
-                old_results = copy(new_results)
-            if self.verbose:
-                print(model_results)
+        if self.verbose:
+            print(model_results)
         
         best_index = np.argmax(results["score"].values)
         self.best_model_index_ = results.iloc[best_index]["model_index"]
         self.best_model_name_ = models[self.best_model_index_][0]
         self.best_params_ = results.iloc[best_index]["param_set"]
-        self.best_batch_ = results.iloc[best_index]["batch"]
         self.best_score_ = results.iloc[best_index]["score"]
         self.worst_score_ = results.iloc[best_index]["score"]
         
@@ -825,8 +727,8 @@ class DistEvolutionarySearch(BaseEstimator, metaclass=ABCMeta):
             .apply(lambda x: models[x][0])
             )
         result_cols = [
-            "model_index", "model_name", "batch", 
-            "params", "rank_test_score", "mean_test_score"
+            "model_index", "model_name", "params", 
+            "rank_test_score", "mean_test_score"
             ]
         self.cv_results_ = results[result_cols].to_dict(orient="list")
         

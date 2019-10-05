@@ -13,7 +13,7 @@ try:
     from skdist.distribute import search
     from skdist.distribute.search import (
         DistGridSearchCV, DistRandomizedSearchCV,
-        DistEvolutionarySearch
+        DistMultiModelSearch
         )
     _import_error = None
 except Exception as e:
@@ -44,7 +44,7 @@ def test_rs():
     preds = rs.predict(X[:3])
     assert np.allclose(preds, np.array([0,0,1]))
 
-def test_evo():
+def test_multimodel():
     X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
     y = np.array([0,0,1]*100)
     models = [
@@ -53,7 +53,7 @@ def test_evo():
         ("lr1", LogisticRegression(multi_class="auto", solver="liblinear"), {"fit_intercept": [True, False], "C": expon()}), 
         ("nb", GaussianNB(), {})
         ]
-    clf = DistEvolutionarySearch(models, n=2, n_iter=2)
+    clf = DistMultiModelSearch(models, n=2)
     clf.fit(X,y)
     preds = clf.predict(X[:3])
     assert np.allclose(preds, np.array([0,0,1]))
