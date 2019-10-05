@@ -7,12 +7,8 @@ env:
 - BEFORE_INSTALL=spark_2_4
 jdk: openjdk8
 dist: xenial
-before_install:
-- build_tools/$BEFORE_INSTALL.sh
-install:
-- pip install -e .[tests]
 script:
-- build_tools/test_script.sh
+- build_tools/$BEFORE_INSTALL.sh
 deploy:
   provider: pypi
   skip_existing: true
