@@ -16,7 +16,7 @@ deploy:
   on:
     branch: master
     python: '3.7'
-    condition: TEST_SUITE = spark_2_4 
+    condition: $TEST_SUITE = spark_2_4 
   user: ibottaml
   password:
     secure: oRr/SzGpQUEZoJ65ZehDBilqZjGNeyAcaXekdYpNbRUwll1kLK1/iOf4P3EPHqMGOBJrV82eJjKMd+LeRLqwEdt8JYwbvfTnINoSVyzHIPk+YJ7Xe1t0HgCQC8x9iUhgr4zDtfgroXmbq9+aerSVHgWsFrJBaprAOoRt7CCc4Baiq03vlYhxTVz7wwhvYrGDq21jCE126Hwg51DJWmWNlUTG42hUUGvP0aPKkCxvKpBG0q5ykSXfADh3z0tD6Lzt9puLxOd/62Lo5j0GpqcxZBsXlk1Mq9yETEJ7FfDH/dBcDXX7W1uJ9wK08iMuQyNzev00Kqd7dXON+a4uq9U+uWJVESleryu6ZAf3cMNZK5VzlH78GY1mKzMz5FBzDll1tLZds6U67c2Lcd+T8FQP323aenY6MGZCOvmFgHYLMIMHaQ3hXbz3X44pSRC/FVJZEgeWTXy7pWpbB6u//AZF4rkxNn/iStnnqhk3MQ9ke7mHcaFt6ilqH0MgTlkO1H/BiU1pV1cU617huv45A54S14fjoV6eJnjavFsPFOs5B9y745Ib9w2ouxrmYK/gI7P1fxdhRa9eS5y+bXZfkRIlDLhasV67ey1eoWryWxv40CGimtX/Ktr5E6y6yZYj30eRhZGLHSwm/Ei5Ihc9tGjOOozwXkkaiYmsS3zvNcV9z5o=
