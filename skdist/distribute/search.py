@@ -685,6 +685,22 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         self.pre_dispatch = pre_dispatch
         
     def fit(self, X, y=None, groups=None, **fit_params):
+        """
+        Run fit with all sets of parameters. Parallelize fit operations
+        using spark.
+        
+        Args:
+            X (array-like, shape = [n_samples, n_features]): training vector, 
+                where n_samples is the number of samples and
+                n_features is the number of features
+            y (array-like, shape = [n_samples] or [n_samples, n_output]): target 
+                relative to X for classification or regression
+            groups (array-like, with shape (n_samples,)): group labels for 
+                the samples used while splitting the dataset into
+                train/test set
+            **fit_params (dict of string -> object): parameters passed 
+                to the ``fit`` method of the estimator
+        """
         _check_estimator(self, verbose=self.verbose)
         models = _validate_models(self.models, self)
         cv = check_cv(
