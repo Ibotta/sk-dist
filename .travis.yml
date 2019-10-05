@@ -4,11 +4,12 @@ python:
 - '3.6'
 - '3.7'
 env:
-- BEFORE_INSTALL=spark_2_4
+- TEST_SUITE=spark_2_3
+- TEST_SUITE=spark_2_4
 jdk: openjdk8
 dist: xenial
 script:
-- build_tools/$BEFORE_INSTALL.sh
+- build_tools/$TEST_SUITE.sh
 deploy:
   provider: pypi
   skip_existing: true
