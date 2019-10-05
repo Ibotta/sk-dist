@@ -6,4 +6,5 @@ tar xzf /opt/spark.tgz -C /opt/
 rm /opt/spark.tgz
 export SPARK_HOME=/opt/spark-2.4.4-bin-hadoop2.7
 export PATH=$PATH:/opt/spark-2.4.4-bin-hadoop2.7/bin
-
+echo $SPARK_HOME
+echo $PATH
