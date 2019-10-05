@@ -9,14 +9,21 @@ sk-dist: Distributed scikit-learn meta-estimators in PySpark
 What is it?
 -----------
 
-``sk-dist`` is a Python module for machine learning built on top of
+``sk-dist`` is a Python package for machine learning built on top of
 `scikit-learn <https://scikit-learn.org/stable/index.html>`__ and is
 distributed under the `Apache 2.0 software
 license <https://github.com/Ibotta/sk-dist/blob/master/LICENSE>`__. The
 ``sk-dist`` module can be thought of as "distributed scikit-learn" as
 its core functionality is to extend the ``scikit-learn`` built-in
 ``joblib`` parallelization of meta-estimator training to
-`spark <https://spark.apache.org/>`__.
+`spark <https://spark.apache.org/>`__. A popular use case is the 
+parallelization of grid search as shown here:
+
+.. figure:: https://github.com/Ibotta/sk-dist/blob/master/doc/images/grid_search.png
+   :alt: sk-dist
+
+Check out the `blog post <https://medium.com/building-ibotta/train-sklearn-100x-faster-bec530fc1f45>`__ 
+for more information on the motivation and use cases of ``sk-dist``.
 
 Main Features
 -------------
@@ -130,23 +137,18 @@ With ``pytest`` installed, you can run tests locally:
 
     pytest sk-dist
 
-Testing Caveats
-^^^^^^^^^^^^^^^
-
-A note about unit testing: Unit tests are only written to test
-functionality that (1) does not require a ``sparkContext`` and (2) has
-no dependencies outside of the package requirements. This means that
-much of the distributed spark functionality is not included in unit
-tests.
-
 Examples
-^^^^^^^^
+--------
 
-For a more complete testing experience and to ensure that your spark
-distribution and configuration are compatible with ``sk-dist``, consider
-running the
-`examples <https://github.com/Ibotta/sk-dist/tree/master/examples>`__
-(which do instantiate a ``sparkContext``) in your spark environment.
+The package contains numerous 
+`examples <https://github.com/Ibotta/sk-dist/tree/master/examples>`__ 
+on how to use ``sk-dist`` in practice. Examples of note are:
+
+-  `Grid Search with XGBoost <https://github.com/Ibotta/sk-dist/blob/master/examples/search/xgb.py>`__
+-  `Spark ML Benchmark Comparison <https://github.com/Ibotta/sk-dist/blob/master/examples/search/spark_ml.py>`__
+-  `Encoderizer with 20 Newsgroups <https://github.com/Ibotta/sk-dist/blob/master/examples/encoder/basic_usage.py>`__
+-  `One-Vs-Rest vs One-Vs-One <https://github.com/Ibotta/sk-dist/blob/master/examples/multiclass/basic_usage.py>`__
+-  `Large Scale Sklearn Prediction with PySpark UDFs <https://github.com/Ibotta/sk-dist/blob/master/examples/predict/basic_usage.py>`_
 
 Background
 ----------
@@ -155,7 +157,14 @@ The project was started at `Ibotta
 Inc. <https://medium.com/building-ibotta>`__ on the machine learning
 team and open sourced in 2019.
 
-It is currently maintained by the machine learning team at Ibotta.
+It is currently maintained by the machine learning team at Ibotta. Special
+thanks to those who contributed to ``sk-dist`` while it was initially
+in development at Ibotta:
+
+-  `Evan Harris <https://github.com/denver1117>`__
+-  `Nicole Woytarowicz <https://github.com/nicolele>`__
+-  `Mike Lewis <https://github.com/Mikelew88>`__
+-  `Bobby Crimi <https://github.com/rpcrimi>`__
 
 .. figure:: https://github.com/Ibotta/sk-dist/blob/master/doc/images/ibottaml.png
    :alt: IbottaML
