@@ -103,8 +103,9 @@ relies solely on a ``sparkContext`` as an argument to various
 ``sk-dist`` classes upon instantiation.
 
 A variety of spark configurations and setups will work. It is left up to
-the user to configure their own spark setup. Testing has been done on
-``spark 2.4``, though any ``spark 2.0+`` versions are expected to work.
+the user to configure their own spark setup. The testing suite runs
+``spark 2.3`` and ``spark 2.4``, though any ``spark 2.0+`` versions 
+are expected to work.
 
 Additional spark related dependecies are ``pyarrow``, which is used only
 for ``skdist.predict`` functions. This uses vectorized pandas UDFs which
