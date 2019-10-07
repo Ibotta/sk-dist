@@ -17,7 +17,8 @@ from joblib import Parallel, delayed
 from itertools import product
 from scipy.sparse import issparse
 
-from .base import _parse_partitions, _clone, _safe_split
+from .base import _parse_partitions, _clone
+from .utils import _safe_split
 
 __all__ = ["DistFeatureEliminator"]
 
