@@ -307,6 +307,25 @@ class Encoderizer(FeatureUnion):
             raise ValueError("Convert this column to list before fitting: {0}".format(col_name))
         return isinstance(col, list)
 
+    @staticmethod
+    def _is_tuple(col, col_name):
+        """Check if numpy array contains tuples of strings, if string attempt to conver to tuple"""
+        col = col.values
+        i=0 
+        while col[i] is None:
+            i+=1
+        col = col[i]
+        raise_exception = False
+        if isinstance(col, str):
+            try:
+                ast.literal_eval(col)
+                raise_exception = True
+            except:
+                return False
+        if raise_exception:
+            raise ValueError("Convert this column to tuple before fitting: {0}".format(col_name))
+        return isinstance(col, tuple)
+
     def _infer_column(self, col_name, X, _default_encoders, thresh=0.10):
         """ Infer encoder type of individual DataFrame column """
         if np.all(X.values == None):
@@ -319,6 +338,10 @@ class Encoderizer(FeatureUnion):
 
         is_list = self._is_list(X, col_name)
         if is_list:
+            return _default_encoders[self.size]["multihotencoder"](col_name)
+
+        is_tuple = self._is_tuple(X, col_name)
+        if is_tuple:
             return _default_encoders[self.size]["multihotencoder"](col_name)
         
         try:
