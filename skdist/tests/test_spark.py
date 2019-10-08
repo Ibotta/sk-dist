@@ -1,4 +1,9 @@
+"""
+Pyspark unit tests
+"""
+
 import pandas as pd
+import numpy as np
 
 import pyspark
 from pyspark.sql import SparkSession, functions as F
@@ -6,7 +11,7 @@ from pyspark.sql import SparkSession, functions as F
 from sklearn.datasets import (
     load_breast_cancer,
     load_digits
-)
+    )
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
