@@ -2,6 +2,7 @@
 Validation functions for the distribute module
 """
 
+import numbers
 import numpy as np
 
 from itertools import compress
@@ -98,7 +99,7 @@ def _is_arraylike(x):
             hasattr(x, '__array__'))
 
 def _num_samples(x):
-    """Return number of samples in array-like x."""
+    """ Return number of samples in array-like x """
     message = 'Expected sequence or array-like, got %s' % type(x)
     if hasattr(x, 'fit') and callable(x.fit):
         # Don't get num_samples from an ensembles length!
@@ -205,7 +206,7 @@ def _determine_key_type(key):
     raise ValueError(err_msg)
 
 def _pandas_indexing(X, key, key_dtype, axis):
-    """Index a pandas dataframe or a series."""
+    """ Index a pandas dataframe or a series """
     if hasattr(key, 'shape'):
         # Work-around for indexing with read-only key in pandas
         # FIXME: solved in pandas 0.25
@@ -216,7 +217,7 @@ def _pandas_indexing(X, key, key_dtype, axis):
     return indexer[:, key] if axis else indexer[key]
 
 def _list_indexing(X, key, key_dtype):
-    """Index a Python list."""
+    """ Index a Python list """
     if np.isscalar(key) or isinstance(key, slice):
         # key is a slice or a scalar
         return X[key]
@@ -227,7 +228,7 @@ def _list_indexing(X, key, key_dtype):
     return [X[idx] for idx in key]
 
 def _array_indexing(array, key, key_dtype, axis):
-    """Index an array or scipy.sparse consistently across NumPy version."""
+    """ Index an array or scipy.sparse consistently across NumPy version """
     if issparse(array):
         if key_dtype == 'bool':
             key = np.asarray(key)
