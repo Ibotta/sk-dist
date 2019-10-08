@@ -83,7 +83,7 @@ def _raw_sampler(models, n_params=None, n=None,
             param_sets.append(param_set)
     return param_sets
 
-def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
+def _fit_one_fold(fit_set, models, X, y, scoring, fit_params):
     """
     Fits the given estimator on one fold of training data.
     Scores the fitted estimator against the test fold.
@@ -108,7 +108,7 @@ def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
 
 def _fit_batch(X, y, folds, param_sets, models, n, 
                scoring, random_state=None, sc=None, 
-               partitions="auto", n_jobs=None, fit_params={}):
+               partitions="auto", n_jobs=None, fit_params):
     """
     Fits a batch of combinations of parameter sets, models
     and cross validation folds. Returns results pandas
