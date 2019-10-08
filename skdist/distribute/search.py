@@ -107,8 +107,8 @@ def _fit_one_fold(fit_set, models, X, y, scoring, fit_params):
     return out_dct
 
 def _fit_batch(X, y, folds, param_sets, models, n, 
-               scoring, random_state=None, sc=None, 
-               partitions="auto", n_jobs=None, fit_params):
+               scoring, fit_params, random_state=None, 
+               sc=None, partitions="auto", n_jobs=None):
     """
     Fits a batch of combinations of parameter sets, models
     and cross validation folds. Returns results pandas
@@ -727,10 +727,10 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         param_sets = list(sample_gen)[0]
         results, model_results = _fit_batch(
             X, y, folds, param_sets, models, self.n, 
-            self.scoring, sc=self.sc, n_jobs=self.n_jobs,
+            self.scoring, fit_params, sc=self.sc, 
+            n_jobs=self.n_jobs,
             partitions=self.partitions,
             random_state=self.random_state, 
-            fit_params=fit_params
             )
         if self.verbose:
             print(model_results)
