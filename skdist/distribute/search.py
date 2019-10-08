@@ -761,7 +761,7 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         if self.refit:
             self.best_estimator_ = _clone(models[self.best_model_index_][1])
             self.best_estimator_.set_params(**self.best_params_)
-            self.best_estimator_.fit(X, y)
+            self.best_estimator_.fit(X, y, **fit_params)
         
         del self.sc
         return self
