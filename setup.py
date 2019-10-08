@@ -29,7 +29,6 @@ MIN_SCIPY_VERSION = "1.3.1"
 MIN_SKLEARN_VERSION = "0.21.3"
 MIN_JOBLIB_VERSION = "0.11"
 MIN_XGBOOST_VERSION = "0.4"
-MIN_CATBOOST_VERSION = "0.17.0"
 MIN_PYARROW_VERSION = "0.8.0"
 MIN_PYSPARK_VERSION = "2.4.4"
 MIN_PYTESTSPARK_VERSION = "0.4.5"
@@ -44,7 +43,6 @@ install_requires = [
 
 tests_require = [
     "xgboost>={0}".format(MIN_XGBOOST_VERSION),
-    "catboost>={0}".format(MIN_CATBOOST_VERSION),
     "pyarrow>={0}".format(MIN_PYARROW_VERSION),
     "pyspark>={0}".format(MIN_PYSPARK_VERSION),
     "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)

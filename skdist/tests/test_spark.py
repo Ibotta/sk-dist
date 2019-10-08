@@ -15,7 +15,6 @@ from sklearn.datasets import (
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
-from catboost import CatBoostClassifier
 
 from skdist.distribute.multiclass import DistOneVsRestClassifier
 from skdist.distribute.search import DistGridSearchCV, DistRandomizedSearchCV
@@ -165,22 +164,5 @@ def test_xgboost(spark_session):
         'early_stopping_rounds': 10
         }
     clf.fit(X, y, **fit_params)
-    preds = clf.predict(X[:3])
-    assert np.allclose(preds, np.array([0,0,1]))
-
-def test_catboost(spark_session):
-    sc = spark_session.sparkContext
-
-    X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
-    y = np.array([0,0,1]*100)
-
-    clf = DistRandomizedSearchCV(
-        CatBoostClassifier(iterations=5), 
-        {"max_depth": [3,5]},
-        cv=3, n_iter=2, sc=sc
-        )
-    X_test = np.array([[1,1,0], [-2,0,5], [1,1,1]]*10)
-    y_test = np.array([1,1,0]*10)
-    clf.fit(X,y)
     preds = clf.predict(X[:3])
     assert np.allclose(preds, np.array([0,0,1]))
