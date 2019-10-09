@@ -86,7 +86,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
         
     def _predict(self, X):
         "" "Collect results from clf.predict calls """
-        return np.asarray([clf.predict(X) for clf in self.estimators_]).T
+        return np.asarray([self.le_.transform(clf.predict(X)) for clf in self.estimators_]).T
         
     def _predict_proba(self, X):
         """ Predict class probabilities for X in 'soft' voting """
