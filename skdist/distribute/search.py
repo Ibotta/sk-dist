@@ -24,6 +24,7 @@ from sklearn.utils.fixes import MaskedArray
 
 from functools import partial
 from scipy.stats import rankdata
+from scipy.sparse import issparse
 from itertools import product
 from collections import defaultdict
 
@@ -31,7 +32,8 @@ from .validation import (
     _check_estimator, _check_base_estimator, 
     _validate_params, _validate_models, 
     _validate_names, _validate_estimators, 
-    _check_n_iter
+    _check_n_iter, _is_arraylike, _num_samples,
+    _safe_indexing
     )
 from .utils import (
     _multimetric_score, _num_samples, 
@@ -81,7 +83,7 @@ def _raw_sampler(models, n_params=None, n=None,
             param_sets.append(param_set)
     return param_sets
 
-def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
+def _fit_one_fold(fit_set, models, X, y, scoring, fit_params):
     """
     Fits the given estimator on one fold of training data.
     Scores the fitted estimator against the test fold.
@@ -105,8 +107,8 @@ def _fit_one_fold(fit_set, models, X, y, scoring, fit_params={}):
     return out_dct
 
 def _fit_batch(X, y, folds, param_sets, models, n, 
-               scoring, random_state=None, sc=None, 
-               partitions="auto", n_jobs=None, fit_params={}):
+               scoring, fit_params, random_state=None, 
+               sc=None, partitions="auto", n_jobs=None):
     """
     Fits a batch of combinations of parameter sets, models
     and cross validation folds. Returns results pandas
@@ -159,6 +161,14 @@ def _get_results(scores):
         .sort_values(["model_index", "params_index"])
         [cols]
         )
+
+def _index_param_value(X, v, indices):
+    """ Private helper function for parameter value indexing """
+    if not _is_arraylike(v) or _num_samples(v) != _num_samples(X):
+        return v
+    if issparse(v):
+        v = v.tocsr()
+    return _safe_indexing(v, indices)
 
 def _fit_and_score(estimator, X, y, scorer, train, test, verbose,
                    parameters, fit_params, return_train_score=False,
@@ -717,10 +727,10 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         param_sets = list(sample_gen)[0]
         results, model_results = _fit_batch(
             X, y, folds, param_sets, models, self.n, 
-            self.scoring, sc=self.sc, n_jobs=self.n_jobs,
+            self.scoring, fit_params, sc=self.sc, 
+            n_jobs=self.n_jobs,
             partitions=self.partitions,
             random_state=self.random_state, 
-            fit_params=fit_params
             )
         if self.verbose:
             print(model_results)
@@ -751,7 +761,7 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         if self.refit:
             self.best_estimator_ = _clone(models[self.best_model_index_][1])
             self.best_estimator_.set_params(**self.best_params_)
-            self.best_estimator_.fit(X, y)
+            self.best_estimator_.fit(X, y, **fit_params)
         
         del self.sc
         return self

@@ -151,6 +151,16 @@ on how to use ``sk-dist`` in practice. Examples of note are:
 -  `One-Vs-Rest vs One-Vs-One <https://github.com/Ibotta/sk-dist/blob/master/examples/multiclass/basic_usage.py>`__
 -  `Large Scale Sklearn Prediction with PySpark UDFs <https://github.com/Ibotta/sk-dist/blob/master/examples/predict/basic_usage.py>`_
 
+Gradient Boosting
+-----------------
+
+``sk-dist`` has been tested with a number of popular gradient boosting packages that conform to the ``scikit-learn`` API. This 
+includes ``xgboost`` and ``catboost``. These will need to be installed in addition to ``sk-dist`` on all nodes of the spark 
+cluster via a node bootstrap script. Version compatibility is left up to the user.
+
+Support for ``lightgbm`` is not guaranteed, as it requires `additional installations <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html#linux>`__ on all 
+nodes of the spark cluster. This may work given proper installation but has not beed tested with ``sk-dist``.
+
 Background
 ----------
 
