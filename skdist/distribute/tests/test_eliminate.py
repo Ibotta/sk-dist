@@ -25,7 +25,7 @@ def test_fit():
         scoring="f1_weighted", min_features_to_select=3, cv=3
         )
     fe.fit(X,y)
-    assert np.allclose(fe.best_features_, [1,2,3])
+    assert np.allclose(fe.best_features_, [0,1,2,3])
 
 def test_score():
     X,y = datasets.load_iris(return_X_y=True)
@@ -34,7 +34,7 @@ def test_score():
         scoring="f1_weighted", min_features_to_select=2, cv=3
         )
     fe.fit(X,y)
-    assert round(fe.score(X,y),2) == 0.95
+    assert round(fe.score(X,y),2) == 0.96
 
 def test_predict():
     X,y = datasets.load_iris(return_X_y=True)
