@@ -16,7 +16,7 @@ from sklearn.model_selection import (
     RandomizedSearchCV, ParameterSampler, 
     check_cv
     )
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import indexable, check_is_fitted
@@ -766,49 +766,49 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
         del self.sc
         return self
     
-    def _check_is_fitted(self, method_name):
+    def _check_is_fitted(self):
         if not self.refit:
             raise NotFittedError('This %s instance was initialized '
-                                 'with refit=False. %s is '
+                                 'with refit=False. The method is '
                                  'available only after refitting on the best '
                                  'parameters. You can refit an estimator '
                                  'manually using the ``best_params_`` '
                                  'attribute'
-                                 % (type(self).__name__, method_name))
+                                 % (type(self).__name__))
         else:
-            check_is_fitted(self, 'best_estimator_')
+            check_is_fitted(self)
     
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict(self, X):
-        self._check_is_fitted('predict')
+        self._check_is_fitted()
         return self.best_estimator_.predict(X)
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict_proba(self, X):
-        self._check_is_fitted('predict_proba')
+        self._check_is_fitted()
         return self.best_estimator_.predict_proba(X)
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict_log_proba(self, X):
-        self._check_is_fitted('predict_log_proba')
+        self._check_is_fitted()
         return self.best_estimator_.predict_log_proba(X)
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def decision_function(self, X):
-        self._check_is_fitted('decision_function')
+        self._check_is_fitted()
         return self.best_estimator_.decision_function(X)
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def transform(self, X):
-        self._check_is_fitted('transform')
+        self._check_is_fitted()
         return self.best_estimator_.transform(X)
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def inverse_transform(self, Xt):
-        self._check_is_fitted('inverse_transform')
+        self._check_is_fitted()
         return self.best_estimator_.inverse_transform(Xt)
 
     @property
     def classes_(self):
-        self._check_is_fitted("classes_")
+        self._check_is_fitted()
         return self.best_estimator_.classes_

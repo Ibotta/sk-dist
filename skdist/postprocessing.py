@@ -67,7 +67,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         """ Compute predictions for samples in X """
-        check_is_fitted(self, 'estimators_')
+        check_is_fitted(self)
         if self.voting == 'soft':
             maj = np.argmax(self.predict_proba(X), axis=1)
         else:  # 'hard' voting
@@ -93,7 +93,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
         if self.voting == 'hard':
             raise AttributeError("predict_proba is not available when"
                                  " voting=%r" % self.voting)
-        check_is_fitted(self, 'estimators_')
+        check_is_fitted(self)
         avg = np.average(self._collect_probas(X), axis=0,
                          weights=self._weights_not_none)
         return avg

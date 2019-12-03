@@ -4,7 +4,7 @@ Test search classes
 
 import numpy as np
 
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 from scipy.stats.distributions import expon
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
@@ -59,22 +59,22 @@ def test_multimodel():
     preds = clf.predict(X[:3])
     assert np.allclose(preds, np.array([0,0,1]))
 
-def test_fit_params():
-    X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
-    y = np.array([0,0,1]*100)
+#def test_fit_params():
+#    X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
+#    y = np.array([0,0,1]*100)
     
-    clf = XGBClassifier()
-    clf = DistRandomizedSearchCV(
-        XGBClassifier(), {"max_depth": [3,5]}, 
-        cv=3, n_iter=2
-        )
-    X_test = np.array([[1,1,0], [-2,0,5], [1,1,1]]*10) 
-    y_test = np.array([1,1,0]*10)
-    fit_params = {
-        'eval_metric': 'logloss',
-        'eval_set': [(X_test, y_test)],
-        'early_stopping_rounds': 10
-        }
-    clf.fit(X, y, **fit_params)    
-    preds = clf.predict(X[:3])
-    assert np.allclose(preds, np.array([0,0,1]))
+#    clf = XGBClassifier()
+#    clf = DistRandomizedSearchCV(
+#        XGBClassifier(), {"max_depth": [3,5]}, 
+#        cv=3, n_iter=2
+#        )
+#    X_test = np.array([[1,1,0], [-2,0,5], [1,1,1]]*10) 
+#    y_test = np.array([1,1,0]*10)
+#    fit_params = {
+#        'eval_metric': 'logloss',
+#        'eval_set': [(X_test, y_test)],
+#        'early_stopping_rounds': 10
+#        }
+#    clf.fit(X, y, **fit_params)    
+#    preds = clf.predict(X[:3])
+#    assert np.allclose(preds, np.array([0,0,1]))

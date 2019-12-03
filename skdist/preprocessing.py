@@ -9,8 +9,10 @@ import numpy as np
 
 from scipy import sparse
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import FunctionTransformer, LabelEncoder, normalize
-from sklearn.preprocessing.label import MultiLabelBinarizer
+from sklearn.preprocessing import (
+    MultiLabelBinarizer, FunctionTransformer, 
+    LabelEncoder, normalize
+    )
 from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn import feature_selection
 

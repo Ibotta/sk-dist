@@ -5,8 +5,9 @@ Utility functions for the distribute module
 import numbers
 import numpy as np
 
-from sklearn.utils import safe_indexing
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
+
+from .validation import _safe_indexing
 
 def _aggregate_score_dicts(scores):
     """ Aggregate the list of dict to dict of np ndarray """
@@ -177,10 +178,10 @@ def _safe_split(estimator, X, y, indices, train_indices=None):
             else:
                 X_subset = X[np.ix_(indices, train_indices)]
         else:
-            X_subset = safe_indexing(X, indices)
+            X_subset = _safe_indexing(X, indices)
 
     if y is not None:
-        y_subset = safe_indexing(y, indices)
+        y_subset = _safe_indexing(y, indices)
     else:
         y_subset = None
     return X_subset, y_subset

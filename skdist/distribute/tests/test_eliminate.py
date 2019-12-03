@@ -20,15 +20,17 @@ def test_import():
 
 def test_fit():
     X,y = datasets.load_iris(return_X_y=True)
+    X = np.hstack([np.reshape(range(len(X)), (len(X), 1)), X]) 
     fe = DistFeatureEliminator(
         LogisticRegression(solver="liblinear", multi_class="auto"), 
         scoring="f1_weighted", min_features_to_select=3, cv=3
         )
     fe.fit(X,y)
-    assert np.allclose(fe.best_features_, [0,1,2,3])
+    assert np.allclose(fe.best_features_, [1,2,3,4])
 
 def test_score():
     X,y = datasets.load_iris(return_X_y=True)
+    X = np.hstack([X, np.reshape(range(len(X)), (len(X), 1))]) 
     fe = DistFeatureEliminator(
         LogisticRegression(solver="liblinear", multi_class="auto"),
         scoring="f1_weighted", min_features_to_select=2, cv=3
@@ -38,15 +40,17 @@ def test_score():
 
 def test_predict():
     X,y = datasets.load_iris(return_X_y=True)
+    X = np.hstack([X, np.reshape(range(len(X)), (len(X), 1))]) 
     fe = DistFeatureEliminator(
         LogisticRegression(solver="liblinear", multi_class="auto"),
         scoring="f1_weighted", min_features_to_select=1, cv=3, step=2
         )
     fe.fit(X,y)
-    assert fe.predict(X)[0] == 0
+    assert np.allclose(fe.best_features_, [0,1,2])
 
 def test_sparse():
     X,y = datasets.load_iris(return_X_y=True)
+    X = np.hstack([X, np.reshape(range(len(X)), (len(X), 1))]) 
     fe = DistFeatureEliminator(
         LogisticRegression(solver="liblinear", multi_class="auto"),
         scoring="f1_weighted", min_features_to_select=3, cv=3
