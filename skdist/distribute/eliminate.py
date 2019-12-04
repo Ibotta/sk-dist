@@ -9,14 +9,14 @@ from sklearn.base import (
     is_classifier
     )
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import check_is_fitted 
 from sklearn.utils import check_X_y, safe_sqr
 from sklearn.model_selection import check_cv
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
 from joblib import Parallel, delayed
 from itertools import product
 from scipy.sparse import issparse
 
+from .validation import _check_is_fitted
 from .base import _parse_partitions, _clone
 from .utils import _safe_split
 
@@ -24,12 +24,9 @@ __all__ = ["DistFeatureEliminator"]
 
 def _drop_col(X, index):
     """ Drop index columns from numpy array or sparse matrix """
-    if issparse(X):
-        cols = np.arange(X.shape[1])
-        cols_to_keep = np.where(np.logical_not(np.in1d(cols, index)))[0]
-        return X[:, cols_to_keep]
-    else:
-        return np.delete(X, index, axis=1)
+    cols = np.arange(X.shape[1])
+    cols_to_keep = np.where(np.logical_not(np.in1d(cols, index)))[0]
+    return X[:, cols_to_keep]
 
 def _fit_and_score_one(index, estimator, X, y, scorer, train, test, verbose, fit_params):
     """ Fit and score an estimator with one feature left out """
@@ -197,7 +194,11 @@ class DistFeatureEliminator(BaseEstimator, ClassifierMixin):
             
         best_set_ = np.argmax(self.scores_)
         self.best_score_ = self.scores_[best_set_]
-        self.best_features_ = np.delete(range(n_features), features_to_remove[best_set_])
+        if len(features_to_remove[best_set_]) > 0:
+            self.best_features_ = np.delete(
+                range(n_features), features_to_remove[best_set_])
+        else:
+            self.best_features_ = range(n_features)
         self.best_estimator_ = _clone(self.estimator)
         self.best_estimator_.fit(X[:, self.best_features_], y, **fit_params)
         self.n_features_ = len(self.best_features_)
@@ -206,47 +207,47 @@ class DistFeatureEliminator(BaseEstimator, ClassifierMixin):
         return self   
     
     def _apply_mask(self, X):
-        self._check_is_fitted('best_features_')
+        self._check_is_fitted()
         if self.mask:
             return X[:, self.best_features_]
         else:
             return X
     
-    def _check_is_fitted(self, method_name):
-        check_is_fitted(self, method_name)
+    def _check_is_fitted(self):
+        _check_is_fitted(self, "best_estimator_")
     
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict(self, X):
-        self._check_is_fitted('predict')
+        self._check_is_fitted()
         return self.best_estimator_.predict(self._apply_mask(X))
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict_proba(self, X):
-        self._check_is_fitted('predict_proba')
+        self._check_is_fitted()
         return self.best_estimator_.predict_proba(self._apply_mask(X))
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict_log_proba(self, X):
-        self._check_is_fitted('predict_log_proba')
+        self._check_is_fitted()
         return self.best_estimator_.predict_log_proba(self._apply_mask(X))
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def decision_function(self, X):
-        self._check_is_fitted('decision_function')
+        self._check_is_fitted()
         return self.best_estimator_.decision_function(self._apply_mask(X))
 
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def transform(self, X):
-        self._check_is_fitted('transform')
+        self._check_is_fitted()
         return self.best_estimator_.transform(self._apply_mask(X))
     
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def score(self, X, y):
-        self._check_is_fitted('score')
+        self._check_is_fitted()
         return self.best_estimator_.score(self._apply_mask(X), y)
         
     @property
     def classes_(self):
-        self._check_is_fitted("classes_")
+        self._check_is_fitted()
         return self.best_estimator_.classes_
 

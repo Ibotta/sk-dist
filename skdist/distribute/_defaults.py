@@ -4,11 +4,10 @@ for automated feature transformation.
 """
 
 from sklearn.pipeline import Pipeline 
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import VarianceThreshold
-from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 
 from ..preprocessing import (
@@ -36,6 +35,7 @@ onehot_encoder = lambda c: [(
                      ("cast", FeatureCast(cast_type=str)),
                      ("fillna", ImputeNull("")),
                      ("vec", CountVectorizer(
+                         token_pattern=None,
                          tokenizer=tokenizer, 
                          binary=True,
                          decode_error="ignore"))])

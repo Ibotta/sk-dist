@@ -7,8 +7,9 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils.validation import check_is_fitted
 from sklearn.utils import Bunch
+
+from .distribute.validation import _check_is_fitted
 
 __all__ = [
     "SimpleVoter"
@@ -67,7 +68,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         """ Compute predictions for samples in X """
-        check_is_fitted(self, 'estimators_')
+        _check_is_fitted(self, "estimators_")
         if self.voting == 'soft':
             maj = np.argmax(self.predict_proba(X), axis=1)
         else:  # 'hard' voting
@@ -93,7 +94,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
         if self.voting == 'hard':
             raise AttributeError("predict_proba is not available when"
                                  " voting=%r" % self.voting)
-        check_is_fitted(self, 'estimators_')
+        _check_is_fitted(self, "estimators_")
         avg = np.average(self._collect_probas(X), axis=0,
                          weights=self._weights_not_none)
         return avg

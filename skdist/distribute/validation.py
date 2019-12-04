@@ -8,6 +8,7 @@ import numpy as np
 from itertools import compress
 from scipy.sparse import issparse
 from sklearn.model_selection import ParameterGrid
+from sklearn.utils.validation import check_is_fitted
 
 def _check_estimator(estimator, verbose=False):
     """ Print sparkContext awareness if apporpriate """
@@ -16,6 +17,13 @@ def _check_estimator(estimator, verbose=False):
             print("No spark context is provided; running locally")
         else:
             print("Spark context found; running with spark")
+
+def _check_is_fitted(estimator, attributes=None):
+    from sklearn import __version__
+    if __version__ < '0.22':
+        return check_is_fitted(estimator, attributes)
+    else:
+        return check_is_fitted(estimator)
 
 def _validate_params(param_sets):
     """ Validates grid params """
