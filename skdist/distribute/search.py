@@ -19,7 +19,7 @@ from sklearn.model_selection import (
 from sklearn.metrics import check_scoring
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import indexable, check_is_fitted
+from sklearn.utils.validation import indexable
 from sklearn.utils.fixes import MaskedArray
 
 from functools import partial
@@ -33,7 +33,7 @@ from .validation import (
     _validate_params, _validate_models, 
     _validate_names, _validate_estimators, 
     _check_n_iter, _is_arraylike, _num_samples,
-    _safe_indexing
+    _safe_indexing, _check_is_fitted
     )
 from .utils import (
     _multimetric_score, _num_samples, 
@@ -776,7 +776,7 @@ class DistMultiModelSearch(BaseEstimator, metaclass=ABCMeta):
                                  'attribute'
                                  % (type(self).__name__))
         else:
-            check_is_fitted(self)
+            _check_is_fitted(self, "best_estimator_")
     
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict(self, X):

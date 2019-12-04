@@ -9,7 +9,6 @@ from sklearn.base import (
     is_classifier
     )
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import check_is_fitted 
 from sklearn.utils import check_X_y, safe_sqr
 from sklearn.model_selection import check_cv
 from sklearn.metrics import check_scoring
@@ -17,6 +16,7 @@ from joblib import Parallel, delayed
 from itertools import product
 from scipy.sparse import issparse
 
+from .validation import _check_is_fitted
 from .base import _parse_partitions, _clone
 from .utils import _safe_split
 
@@ -214,7 +214,7 @@ class DistFeatureEliminator(BaseEstimator, ClassifierMixin):
             return X
     
     def _check_is_fitted(self):
-        check_is_fitted(self)
+        _check_is_fitted(self, "best_estimator_")
     
     @if_delegate_has_method(delegate=('best_estimator_', 'estimator'))
     def predict(self, X):

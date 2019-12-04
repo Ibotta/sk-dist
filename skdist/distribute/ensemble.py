@@ -18,11 +18,10 @@ from sklearn.tree import ExtraTreeRegressor
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import KFold
 from sklearn.utils import check_array, check_random_state
-from sklearn.utils.validation import check_is_fitted
 from numpy import float32 as DTYPE
 from numpy import float64 as DOUBLE
 
-from .validation import _check_estimator
+from .validation import _check_estimator, _check_is_fitted
 from .base import (
     _clone, _get_value, _parse_partitions
     )
@@ -635,5 +634,5 @@ class DistRandomTreesEmbedding(DistBaseForest):
 
     def transform(self, X):
         """ Transform dataset """
-        check_is_fitted(self)
+        _check_is_fitted(self, "one_hot_encoder_")
         return self.one_hot_encoder_.transform(self.apply(X))
