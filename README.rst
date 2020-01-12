@@ -4,7 +4,7 @@
 sk-dist: Distributed scikit-learn meta-estimators in PySpark
 ============================================================
 
-|License| |Build Status| |PyPI Package| |Downloads|
+|License| |Build Status| |PyPI Package| |Downloads| |Python Versions|
 
 What is it?
 -----------
@@ -187,4 +187,6 @@ in development at Ibotta:
 .. |PyPI Package| image:: https://badge.fury.io/py/sk-dist.svg
    :target: https://pypi.org/project/sk-dist/
 .. |Downloads| image:: https://img.shields.io/pypi/dm/sk-dist
+   :target: https://pypi.org/project/sk-dist/
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/sk-dist
    :target: https://pypi.org/project/sk-dist/
