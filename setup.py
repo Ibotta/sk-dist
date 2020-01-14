@@ -28,9 +28,9 @@ PROJECT_URLS = {
     }
 MIN_PYTHON_VERSION = "3.5"
 MIN_PANDAS_VERSION = "0.19.0"
-MIN_NUMPY_VERSION = "0.17.0"
-MIN_SCIPY_VERSION = "1.3.1"
-MIN_SKLEARN_VERSION = "0.21.3"
+MIN_NUMPY_VERSION = "1.8.2"
+MIN_SCIPY_VERSION = "0.13.3"
+MIN_SKLEARN_VERSION = "0.20.0"
 MIN_JOBLIB_VERSION = "0.11"
 MIN_XGBOOST_VERSION = "0.4"
 MIN_PYARROW_VERSION = "0.8.0"
@@ -39,10 +39,9 @@ MIN_PYTESTSPARK_VERSION = "0.4.5"
 
 install_requires = [
     "pandas>={0}".format(MIN_PANDAS_VERSION),
-    "numpy>={0}".format(MIN_NUMPY_VERSION),
-    "scipy>={0}".format(MIN_SCIPY_VERSION),
-#    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
-    "scikit-learn==0.20.0",
+    "numpy=={0}".format(MIN_NUMPY_VERSION),
+    "scipy=={0}".format(MIN_SCIPY_VERSION),
+    "scikit-learn=={0}".format(MIN_SKLEARN_VERSION),
     "joblib>={0}".format(MIN_JOBLIB_VERSION)
 ]
 
