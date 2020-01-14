@@ -41,7 +41,8 @@ install_requires = [
     "pandas>={0}".format(MIN_PANDAS_VERSION),
     "numpy>={0}".format(MIN_NUMPY_VERSION),
     "scipy>={0}".format(MIN_SCIPY_VERSION),
-    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
+#    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
+    "scikit-learn==0.20.3,
     "joblib>={0}".format(MIN_JOBLIB_VERSION)
 ]
 
