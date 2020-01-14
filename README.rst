@@ -91,7 +91,10 @@ Dependencies
 -  `scipy <https://www.scipy.org/>`__ 
 -  `joblib <https://joblib.readthedocs.io/en/latest/>`__ 
 
-sk-dist does not support Python 2
+NOTE:
+-  versions of ``numpy`` and ``scipy`` that are compatible with any compatible version of 
+``scikit-learn`` should be sufficient for ``sk-dist``
+- ``sk-dist`` is not supported with Python 2
 
 Spark Dependencies
 ~~~~~~~~~~~~~~~~~~
