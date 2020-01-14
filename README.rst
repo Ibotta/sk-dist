@@ -94,7 +94,7 @@ Dependencies
 Dependency Notes
 ~~~~~~~~~~~~~~~~
 
--  versions of ``numpy`` and ``scipy`` that are compatible with any compatible version of ``scikit-learn`` should be sufficient for ``sk-dist``
+-  versions of ``numpy``, ``scipy`` and ``joblib`` that are compatible with any compatible version of ``scikit-learn`` should be sufficient for ``sk-dist``
 - ``sk-dist`` is not supported with Python 2
 
 Spark Dependencies
