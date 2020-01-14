@@ -85,11 +85,11 @@ Dependencies
 ``sk-dist`` requires:
 
 -  `Python <https://www.python.org/>`__ (>= 3.5)
--  `pandas <https://pandas.pydata.org/>`__ (>=0.19.0)
--  `numpy <https://www.numpy.org/>`__ (>=1.17.0)
--  `scipy <https://www.scipy.org/>`__ (>=1.3.1)
--  `scikit-learn <https://scikit-learn.org/stable/>`__ (>=0.21.3)
--  `joblib <https://joblib.readthedocs.io/en/latest/>`__ (>=0.11)
+-  `scikit-learn <https://scikit-learn.org/stable/>`__ (>=0.20.0)
+-  `pandas <https://pandas.pydata.org/>`__ (>=0.17.0)
+-  `numpy <https://www.numpy.org/>`__ 
+-  `scipy <https://www.scipy.org/>`__ 
+-  `joblib <https://joblib.readthedocs.io/en/latest/>`__ 
 
 sk-dist does not support Python 2
 
