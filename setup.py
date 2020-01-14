@@ -39,9 +39,9 @@ MIN_PYTESTSPARK_VERSION = "0.4.5"
 
 install_requires = [
     "pandas>={0}".format(MIN_PANDAS_VERSION),
-    "numpy=={0}".format(MIN_NUMPY_VERSION),
-    "scipy=={0}".format(MIN_SCIPY_VERSION),
-    "scikit-learn=={0}".format(MIN_SKLEARN_VERSION),
+    "numpy>={0}".format(MIN_NUMPY_VERSION),
+    "scipy>={0}".format(MIN_SCIPY_VERSION),
+    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
     "joblib>={0}".format(MIN_JOBLIB_VERSION)
 ]
 
