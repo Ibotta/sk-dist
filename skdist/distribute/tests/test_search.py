@@ -2,9 +2,16 @@
 Test search classes
 """
 
+import sys
+import pytest
 import numpy as np
 
-from xgboost import XGBClassifier
+try:
+    import xgboost
+    from xgboost import XGBClassifier
+except ImportError:
+    pass
+
 from scipy.stats.distributions import expon
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
@@ -59,11 +66,11 @@ def test_multimodel():
     preds = clf.predict(X[:3])
     assert np.allclose(preds, np.array([0,0,1]))
 
+@pytest.mark.skipif("xgboost" not in sys.modules, reason="requires xgboost")
 def test_fit_params():
     X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
     y = np.array([0,0,1]*100)
     
-    clf = XGBClassifier()
     clf = DistRandomizedSearchCV(
         XGBClassifier(), {"max_depth": [3,5]}, 
         cv=3, n_iter=2

@@ -2,11 +2,16 @@
 Pyspark unit tests
 """
 
+import pytest
+import sys
 import pandas as pd
 import numpy as np
 
-import pyspark
-from pyspark.sql import SparkSession, functions as F
+try:
+    import pyspark
+    from pyspark.sql import SparkSession, functions as F
+except ImportError:
+    pass
 
 from sklearn.datasets import (
     load_breast_cancer,
@@ -14,19 +19,26 @@ from sklearn.datasets import (
     )
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
+
+try:
+    import xgboost
+    from xgboost import XGBClassifier
+except ImportError:
+    pass
 
 from skdist.distribute.multiclass import DistOneVsRestClassifier
 from skdist.distribute.search import DistGridSearchCV, DistRandomizedSearchCV
 from skdist.distribute.ensemble import DistRandomForestClassifier
 from skdist.distribute.predict import get_prediction_udf
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_spark_session_dataframe(spark_session):
     test_df = spark_session.createDataFrame([[1, 3], [2, 4]], "a: int, b: int")
 
     assert type(test_df) == pyspark.sql.dataframe.DataFrame
     assert test_df.count() == 2
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_spark_session_sql(spark_session):
     test_df = spark_session.createDataFrame([[1, 3], [2, 4]], "a: int, b: int")
     test_df.createOrReplaceTempView('test')
@@ -34,6 +46,7 @@ def test_spark_session_sql(spark_session):
     test_filtered_df = spark_session.sql('SELECT a, b from test where a > 1')
     assert test_filtered_df.count() == 1
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_ensemble(spark_session):
     sc = spark_session.sparkContext
 
@@ -61,6 +74,7 @@ def test_ensemble(spark_session):
 
     assert preds.shape == y_test.shape
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_search(spark_session):
     sc = spark_session.sparkContext
 
@@ -91,6 +105,7 @@ def test_search(spark_session):
 
     assert preds.shape == y_test.shape
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_multiclass(spark_session):
     sc = spark_session.sparkContext
 
@@ -115,6 +130,7 @@ def test_multiclass(spark_session):
 
     assert preds.shape == y_test.shape
 
+@pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_predict(spark_session):
     sc = spark_session.sparkContext
 
@@ -146,6 +162,7 @@ def test_predict(spark_session):
     )
     assert prediction_df.count() == X.shape[0]
 
+@pytest.mark.skipif(("pyspark" not in sys.modules) or ("xgboost" not in sys.modules), reason="requires pyspark and xgboost")
 def test_xgboost(spark_session):
     sc = spark_session.sparkContext
 
