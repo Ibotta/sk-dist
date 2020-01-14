@@ -48,7 +48,6 @@ tests_require = [
     "pyspark>={0}".format(MIN_PYSPARK_VERSION),
     "pytest-spark>={0}".format(MIN_PYTESTSPARK_VERSION)
 ]
-print(tests_require)
 
 def parse_description(description):
     """
