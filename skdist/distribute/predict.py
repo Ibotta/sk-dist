@@ -32,19 +32,12 @@ def _is_pyspark_installed():
         return False
 
 def _is_pyarrow_installed():
-    global _PYARROW_INSTALLED
-    if _PYARROW_INSTALLED is None:
-        try:
-            import pyarrow
-            _PYARROW_INSTALLED = True
-        except ImportError:
-            _PYARROW_INSTALLED = False
-
-    if _PYARROW_INSTALLED:
+    try:
         import pyarrow
         return True
-    else:
-        return False
+    except ImportError:
+        pass
+    return False
 
 def _get_vals(*cols, feature_type="numpy", names=None):
     """ Prep input data for prediction method """
