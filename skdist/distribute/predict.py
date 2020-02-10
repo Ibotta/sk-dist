@@ -140,9 +140,9 @@ def get_prediction_udf(model, method="predict", feature_type="numpy", names=None
     ... only showing top 20 rows   
     """
     if not _is_pyspark_installed():
-        raise ModuleNotFoundError("Module pyspark not found")
+        raise ImportError("Module pyspark not found")
     if not _is_pyarrow_installed():
-        raise ModuleNotFoundError("Module pyarrow not found")
+        raise ImportError("Module pyarrow not found")
     from pyspark.sql import functions as F
     from pyspark.sql.types import (
         DoubleType, StringType, IntegerType, ArrayType
