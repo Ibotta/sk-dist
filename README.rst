@@ -113,8 +113,8 @@ are expected to work.
 
 Additional spark related dependecies are ``pyarrow``, which is used only
 for ``skdist.predict`` functions. This uses vectorized pandas UDFs which
-require ``pyarrow>=0.8.0``. Depending on the spark version, it may be
-necessary to set
+require ``pyarrow>=0.8.0``, tested with ``pyarrow==0.15.0``. 
+Depending on the spark version, it may be necessary to set
 ``spark.conf.set("spark.sql.execution.arrow.enabled", "true")`` in the
 spark configuration.
 
