@@ -3,6 +3,7 @@ python:
 - '3.5'
 - '3.6'
 - '3.7'
+- '3.8'
 env:
 - TEST_SUITE=spark_2_3
 - TEST_SUITE=spark_2_4
