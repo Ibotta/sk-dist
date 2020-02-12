@@ -181,6 +181,8 @@ in development at Ibotta:
 -  `Mike Lewis <https://github.com/Mikelew88>`__
 -  `Bobby Crimi <https://github.com/rpcrimi>`__
 
+Thanks to `James Foley <https://github.com/chadfoley36>`__ for logo artwork.
+
 .. figure:: https://github.com/Ibotta/sk-dist/blob/master/doc/images/ibottaml.png
    :alt: IbottaML
 
