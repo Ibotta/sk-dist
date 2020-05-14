@@ -193,6 +193,6 @@ Thanks to `James Foley <https://github.com/chadfoley36>`__ for logo artwork.
 .. |PyPI Package| image:: https://badge.fury.io/py/sk-dist.svg
    :target: https://pypi.org/project/sk-dist/
 .. |Downloads| image:: https://img.shields.io/pypi/dm/sk-dist
-   :target: https://pypi.org/project/sk-dist/
+   :target: https://pypistats.org/packages/sk-dist
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/sk-dist
    :target: https://pypi.org/project/sk-dist/
