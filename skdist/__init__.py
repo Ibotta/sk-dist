@@ -13,6 +13,6 @@ is effectively identical to its single machine counterpart,
 ready for prediction using the inherited methods.
 """
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 
 __all__ = ['distribute', 'preprocessing', 'postprocessing', 'tests']
