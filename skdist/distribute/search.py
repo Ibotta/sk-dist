@@ -20,9 +20,9 @@ from sklearn.metrics import check_scoring
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import indexable
-from sklearn.utils.fixes import MaskedArray
 
 from functools import partial
+from numpy.ma import MaskedArray
 from scipy.stats import rankdata
 from scipy.sparse import issparse
 from itertools import product
