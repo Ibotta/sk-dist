@@ -16,4 +16,6 @@ then
   # run tests
   pip install -e .[tests]
   build_tools/test_script.sh
+else
+  echo "Skipped tests - spark and python versions are not compatible"
 fi
