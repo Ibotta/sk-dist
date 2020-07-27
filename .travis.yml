@@ -4,8 +4,8 @@ python:
 - '3.6'
 - '3.7'
 env:
-- TEST_SUITE=spark_2_3
 - TEST_SUITE=spark_2_4
+- TEST_SUITE=spark_3_0
 jdk: openjdk8
 dist: xenial
 script:
