@@ -108,12 +108,12 @@ relies solely on a ``sparkContext`` as an argument to various
 
 A variety of spark configurations and setups will work. It is left up to
 the user to configure their own spark setup. The testing suite runs
-``spark 2.3`` and ``spark 2.4``, though any ``spark 2.0+`` versions 
+``spark 2.4`` and ``spark 3.0``, though any ``spark 2.0+`` versions 
 are expected to work.
 
 Additional spark related dependecies are ``pyarrow``, which is used only
 for ``skdist.predict`` functions. This uses vectorized pandas UDFs which
-require ``pyarrow>=0.8.0``, tested with ``pyarrow==0.15.0``. 
+require ``pyarrow>=0.8.0``, tested with ``pyarrow==0.16.0``. 
 Depending on the spark version, it may be necessary to set
 ``spark.conf.set("spark.sql.execution.arrow.enabled", "true")`` in the
 spark configuration.
