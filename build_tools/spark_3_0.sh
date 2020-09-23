@@ -5,8 +5,8 @@ mkdir -p /opt
 wget -q -O /opt/spark.tgz http://www.gtlib.gatech.edu/pub/apache/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz
 tar xzf /opt/spark.tgz -C /opt/
 rm /opt/spark.tgz
-export SPARK_HOME=/opt/spark-3.0.0-bin-hadoop2.7
-export PATH=$PATH:/opt/spark-3.0.0-bin-hadoop2.7/bin
+export SPARK_HOME=/opt/spark-3.0.1-bin-hadoop2.7
+export PATH=$PATH:/opt/spark-3.0.1-bin-hadoop2.7/bin
 
 # run tests
 pip install -e .[tests]
