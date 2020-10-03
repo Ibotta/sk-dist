@@ -9,11 +9,14 @@ from joblib import Parallel, delayed
 from scipy.sparse import hstack, issparse
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble.forest import (
-    BaseForest, ExtraTreesClassifier,
-    ExtraTreesRegressor, ForestClassifier,
-    ForestRegressor, RandomForestClassifier,
-    RandomForestRegressor
-    )
+    BaseForest,
+    ExtraTreesClassifier,
+    ExtraTreesRegressor,
+    ForestClassifier,
+    ForestRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.tree import ExtraTreeRegressor
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import KFold
@@ -22,28 +25,28 @@ from numpy import float32 as DTYPE
 from numpy import float64 as DOUBLE
 
 from .validation import _check_estimator, _check_is_fitted
-from .base import (
-    _clone, _get_value, _parse_partitions
-    )
+from .base import _clone, _get_value, _parse_partitions
 
 __all__ = [
     "DistRandomForestClassifier",
     "DistRandomForestRegressor",
     "DistExtraTreesClassifier",
     "DistExtraTreesRegressor",
-    "DistRandomTreesEmbedding"
+    "DistRandomTreesEmbedding",
 ]
 
 MAX_RAND_SEED = np.iinfo(np.int32).max
+
 
 def _set_random_states(estimator, random_state=None):
     """ Sets fixed random_state parameters for an estimator """
     to_set = {}
     for key in sorted(estimator.get_params(deep=True)):
-        if key == 'random_state' or key.endswith('__random_state'):
+        if key == "random_state" or key.endswith("__random_state"):
             to_set[key] = random_state
     if to_set:
         estimator.set_params(**to_set)
+
 
 def _generate_sample_indices(random_state, n_samples):
     """ Private function used to _parallel_build_trees function """
@@ -51,24 +54,37 @@ def _generate_sample_indices(random_state, n_samples):
     sample_indices = random_instance.randint(0, n_samples, n_samples)
     return sample_indices
 
+
 def _make_estimator(base_estimator, estimator_params, params={}, random_state=None):
     """ Make and configure a copy of base_estimator """
     estimator = _clone(base_estimator)
-    estimator.set_params(**dict((p, params[p])
-                                for p in estimator_params))
+    estimator.set_params(**dict((p, params[p]) for p in estimator_params))
 
     if random_state is not None:
         _set_random_states(estimator, random_state)
     return estimator
 
-def _build_trees(base_estimator, estimator_params, params, X, y, sample_weight,
-                          tree_state, n_trees, verbose=0, class_weight=None,
-                          bootstrap=False):
+
+def _build_trees(
+    base_estimator,
+    estimator_params,
+    params,
+    X,
+    y,
+    sample_weight,
+    tree_state,
+    n_trees,
+    verbose=0,
+    class_weight=None,
+    bootstrap=False,
+):
     """ Fit a single tree in parallel """
     tree = _make_estimator(
-        _get_value(base_estimator), estimator_params,
-        params=params, random_state=tree_state
-        )
+        _get_value(base_estimator),
+        estimator_params,
+        params=params,
+        random_state=tree_state,
+    )
     if bootstrap:
         n_samples = X.shape[0]
         if sample_weight is None:
@@ -80,17 +96,18 @@ def _build_trees(base_estimator, estimator_params, params, X, y, sample_weight,
         sample_counts = np.bincount(indices, minlength=n_samples)
         curr_sample_weight *= sample_counts
 
-        if class_weight == 'subsample':
+        if class_weight == "subsample":
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', DeprecationWarning)
-                curr_sample_weight *= compute_sample_weight('auto', y, indices)
-        elif class_weight == 'balanced_subsample':
-            curr_sample_weight *= compute_sample_weight('balanced', y, indices)
+                warnings.simplefilter("ignore", DeprecationWarning)
+                curr_sample_weight *= compute_sample_weight("auto", y, indices)
+        elif class_weight == "balanced_subsample":
+            curr_sample_weight *= compute_sample_weight("balanced", y, indices)
 
         tree.fit(X, y, sample_weight=curr_sample_weight, check_input=False)
     else:
         tree.fit(X, y, sample_weight=sample_weight, check_input=False)
     return tree
+
 
 def get_single_oof(clf, X, y, train_index, test_index):
     """
@@ -108,6 +125,7 @@ def get_single_oof(clf, X, y, train_index, test_index):
 
     clf.fit(X_train, y_train)
     return test_index, clf.predict_proba(X_test)
+
 
 def get_oof(clf, X, y, n_splits=5):
     """ Fit the classifier to the data and make predictions out of fold """
@@ -132,6 +150,7 @@ def get_oof(clf, X, y, n_splits=5):
     clf.fit(X, y)
     return clf, oof_train
 
+
 class DistBaseForest(BaseForest):
     """
     Same as sklearn `BaseForest` but with distributed
@@ -147,9 +166,9 @@ class DistBaseForest(BaseForest):
             while 'auto' will set `numSlices` to the number required fits.
         **kwargs: Keyword arguments to be passed to `BaseForest`.
     """
-    def __init__(self, base_estimator, sc=None, partitions='auto', **kwargs):
-        BaseForest.__init__(
-            self, base_estimator, **kwargs)
+
+    def __init__(self, base_estimator, sc=None, partitions="auto", **kwargs):
+        BaseForest.__init__(self, base_estimator, **kwargs)
         self.sc = sc
         self.partitions = partitions
         for key, val in kwargs.items():
@@ -175,11 +194,11 @@ class DistBaseForest(BaseForest):
                 classification, splits are also ignored if they would result in any
                 single class carrying a negative weight in either child node.
         """
-        _check_estimator(self, verbose=self.verbose)        
+        _check_estimator(self, verbose=self.verbose)
 
         # Validate or convert input data
         X = check_array(X, accept_sparse="csc", dtype=DTYPE)
-        y = check_array(y, accept_sparse='csc', ensure_2d=False, dtype=None)
+        y = check_array(y, accept_sparse="csc", ensure_2d=False, dtype=None)
         if sample_weight is not None:
             sample_weight = check_array(sample_weight, ensure_2d=False)
         if issparse(X):
@@ -192,10 +211,13 @@ class DistBaseForest(BaseForest):
 
         y = np.atleast_1d(y)
         if y.ndim == 2 and y.shape[1] == 1:
-            warn("A column-vector y was passed when a 1d array was"
-                 " expected. Please change the shape of y to "
-                 "(n_samples,), for example using ravel().",
-                 DataConversionWarning, stacklevel=2)
+            warn(
+                "A column-vector y was passed when a 1d array was"
+                " expected. Please change the shape of y to "
+                "(n_samples,), for example using ravel().",
+                DataConversionWarning,
+                stacklevel=2,
+            )
 
         if y.ndim == 1:
             # reshape is necessary to preserve the data contiguity against vs
@@ -219,8 +241,9 @@ class DistBaseForest(BaseForest):
         self._validate_estimator()
 
         if not self.bootstrap and self.oob_score:
-            raise ValueError("Out of bag estimation only available"
-                             " if bootstrap=True")
+            raise ValueError(
+                "Out of bag estimation only available" " if bootstrap=True"
+            )
 
         random_state = check_random_state(self.random_state)
 
@@ -231,13 +254,17 @@ class DistBaseForest(BaseForest):
         n_more_estimators = self.n_estimators - len(self.estimators_)
 
         if n_more_estimators < 0:
-            raise ValueError('n_estimators=%d must be larger or equal to '
-                             'len(estimators_)=%d when warm_start==True'
-                             % (self.n_estimators, len(self.estimators_)))
+            raise ValueError(
+                "n_estimators=%d must be larger or equal to "
+                "len(estimators_)=%d when warm_start==True"
+                % (self.n_estimators, len(self.estimators_))
+            )
 
         elif n_more_estimators == 0:
-            warn("Warm-start fitting without increasing n_estimators does not "
-                 "fit new trees.")
+            warn(
+                "Warm-start fitting without increasing n_estimators does not "
+                "fit new trees."
+            )
         else:
             if self.warm_start and len(self.estimators_) > 0:
                 # We draw from the random state to get the random state we
@@ -257,22 +284,42 @@ class DistBaseForest(BaseForest):
                 base_estimator = self.base_estimator_
                 trees = Parallel(n_jobs=self.n_jobs)(
                     delayed(_build_trees)(
-                        base_estimator, estimator_params, 
-                        params, X, y, sample_weight,
-                        state, n_more_estimators, verbose=verbose,
-                        class_weight=class_weight, 
-                        bootstrap=bootstrap)
-                    for state in states)
+                        base_estimator,
+                        estimator_params,
+                        params,
+                        X,
+                        y,
+                        sample_weight,
+                        state,
+                        n_more_estimators,
+                        verbose=verbose,
+                        class_weight=class_weight,
+                        bootstrap=bootstrap,
+                    )
+                    for state in states
+                )
             else:
                 base_estimator = self.sc.broadcast(self.base_estimator_)
                 partitions = _parse_partitions(self.partitions, n_more_estimators)
-                trees = self.sc.parallelize(
-                    states,
-                    numSlices=partitions).map(
-                    lambda x: _build_trees(
-                        base_estimator, estimator_params, params, X, y, sample_weight,
-                        x, n_more_estimators, verbose=verbose,
-                        class_weight=class_weight, bootstrap=bootstrap)).collect()
+                trees = (
+                    self.sc.parallelize(states, numSlices=partitions)
+                    .map(
+                        lambda x: _build_trees(
+                            base_estimator,
+                            estimator_params,
+                            params,
+                            X,
+                            y,
+                            sample_weight,
+                            x,
+                            n_more_estimators,
+                            verbose=verbose,
+                            class_weight=class_weight,
+                            bootstrap=bootstrap,
+                        )
+                    )
+                    .collect()
+                )
 
             # Collect newly grown trees
             self.estimators_.extend(trees)
@@ -292,6 +339,7 @@ class DistBaseForest(BaseForest):
         """ Calculate out of bag predictions and score """
         pass
 
+
 class DistForestClassifier(DistBaseForest, ForestClassifier):
     """
     Same as sklearn `ForestClassifier` but with distributed
@@ -307,11 +355,12 @@ class DistForestClassifier(DistBaseForest, ForestClassifier):
             while 'auto' will set `numSlices` to the number required fits.
         **kwargs: Keyword arguments to be passed to `ForestClassifier`.
     """
-    def __init__(self, base_estimator, sc=None, partitions='auto', **kwargs):
-        ForestClassifier.__init__(
-            self, base_estimator, **kwargs)
+
+    def __init__(self, base_estimator, sc=None, partitions="auto", **kwargs):
+        ForestClassifier.__init__(self, base_estimator, **kwargs)
         self.sc = sc
         self.partitions = partitions
+
 
 class DistRandomForestClassifier(DistForestClassifier, RandomForestClassifier):
     """
@@ -325,28 +374,31 @@ class DistRandomForestClassifier(DistForestClassifier, RandomForestClassifier):
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
     """
-    def __init__(self, 
-                 sc=None, 
-                 partitions='auto', 
-                 n_estimators=100,
-                 criterion="gini",
-                 max_depth=None,
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.,
-                 max_features="auto",
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.,
-                 min_impurity_split=None,
-                 bootstrap=True,
-                 oob_score=False,
-                 n_jobs=None,
-                 random_state=None,
-                 verbose=0,
-                 warm_start=False,
-                 class_weight=None):
+
+    def __init__(
+        self,
+        sc=None,
+        partitions="auto",
+        n_estimators=100,
+        criterion="gini",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features="auto",
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        min_impurity_split=None,
+        bootstrap=True,
+        oob_score=False,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+        class_weight=None,
+    ):
         RandomForestClassifier.__init__(
-            self, 
+            self,
             n_estimators=n_estimators,
             criterion=criterion,
             max_depth=max_depth,
@@ -363,10 +415,11 @@ class DistRandomForestClassifier(DistForestClassifier, RandomForestClassifier):
             random_state=random_state,
             verbose=verbose,
             warm_start=warm_start,
-            class_weight=class_weight
-            )
+            class_weight=class_weight,
+        )
         self.sc = sc
         self.partitions = partitions
+
 
 class DistExtraTreesClassifier(DistForestClassifier, ExtraTreesClassifier):
     """
@@ -380,26 +433,29 @@ class DistExtraTreesClassifier(DistForestClassifier, ExtraTreesClassifier):
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
     """
-    def __init__(self, 
-                 sc=None, 
-                 partitions='auto', 
-                 n_estimators=100,
-                 criterion="gini",
-                 max_depth=None,
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.,
-                 max_features="auto",
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.,
-                 min_impurity_split=None,
-                 bootstrap=False,
-                 oob_score=False,
-                 n_jobs=None,
-                 random_state=None,
-                 verbose=0,
-                 warm_start=False,
-                 class_weight=None):
+
+    def __init__(
+        self,
+        sc=None,
+        partitions="auto",
+        n_estimators=100,
+        criterion="gini",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features="auto",
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        min_impurity_split=None,
+        bootstrap=False,
+        oob_score=False,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+        class_weight=None,
+    ):
         ExtraTreesClassifier.__init__(
             self,
             n_estimators=n_estimators,
@@ -418,10 +474,11 @@ class DistExtraTreesClassifier(DistForestClassifier, ExtraTreesClassifier):
             random_state=random_state,
             verbose=verbose,
             warm_start=warm_start,
-            class_weight=class_weight
-            )
+            class_weight=class_weight,
+        )
         self.sc = sc
         self.partitions = partitions
+
 
 class DistForestRegressor(DistBaseForest, ForestRegressor):
     """
@@ -438,11 +495,12 @@ class DistForestRegressor(DistBaseForest, ForestRegressor):
             while 'auto' will set `numSlices` to the number required fits.
         **kwargs: Keyword arguments to be passed to `ForestRegressor`.
     """
-    def __init__(self, base_estimator, sc=None, partitions='auto', **kwargs):
-        ForestRegressor.__init__(
-            self, base_estimator, **kwargs)
+
+    def __init__(self, base_estimator, sc=None, partitions="auto", **kwargs):
+        ForestRegressor.__init__(self, base_estimator, **kwargs)
         self.sc = sc
         self.partitions = partitions
+
 
 class DistRandomForestRegressor(DistForestRegressor, RandomForestRegressor):
     """
@@ -456,25 +514,28 @@ class DistRandomForestRegressor(DistForestRegressor, RandomForestRegressor):
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
     """
-    def __init__(self,
-                 sc=None,
-                 partitions='auto',
-                 n_estimators=100,
-                 criterion="mse",
-                 max_depth=None,
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.,
-                 max_features="auto",
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.,
-                 min_impurity_split=None,
-                 bootstrap=True,
-                 oob_score=False,
-                 n_jobs=None,
-                 random_state=None,
-                 verbose=0,
-                 warm_start=False):
+
+    def __init__(
+        self,
+        sc=None,
+        partitions="auto",
+        n_estimators=100,
+        criterion="mse",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features="auto",
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        min_impurity_split=None,
+        bootstrap=True,
+        oob_score=False,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+    ):
         RandomForestRegressor.__init__(
             self,
             n_estimators=n_estimators,
@@ -492,10 +553,11 @@ class DistRandomForestRegressor(DistForestRegressor, RandomForestRegressor):
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose,
-            warm_start=warm_start
-            )
+            warm_start=warm_start,
+        )
         self.sc = sc
         self.partitions = partitions
+
 
 class DistExtraTreesRegressor(DistForestRegressor, ExtraTreesRegressor):
     """
@@ -509,25 +571,28 @@ class DistExtraTreesRegressor(DistForestRegressor, ExtraTreesRegressor):
             search space. Integer values or None will be used directly for `numSlices`,
             while 'auto' will set `numSlices` to the number required fits.
     """
-    def __init__(self,
-                 sc=None,
-                 partitions='auto',
-                 n_estimators=100,
-                 criterion="mse",
-                 max_depth=None,
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.,
-                 max_features="auto",
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.,
-                 min_impurity_split=None,
-                 bootstrap=False,
-                 oob_score=False,
-                 n_jobs=None,
-                 random_state=None,
-                 verbose=0,
-                 warm_start=False):
+
+    def __init__(
+        self,
+        sc=None,
+        partitions="auto",
+        n_estimators=100,
+        criterion="mse",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features="auto",
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        min_impurity_split=None,
+        bootstrap=False,
+        oob_score=False,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+    ):
         ExtraTreesRegressor.__init__(
             self,
             n_estimators=n_estimators,
@@ -545,10 +610,11 @@ class DistExtraTreesRegressor(DistForestRegressor, ExtraTreesRegressor):
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose,
-            warm_start=warm_start
-            )
+            warm_start=warm_start,
+        )
         self.sc = sc
         self.partitions = partitions
+
 
 class DistRandomTreesEmbedding(DistBaseForest):
     """
@@ -563,39 +629,50 @@ class DistRandomTreesEmbedding(DistBaseForest):
             while 'auto' will set `numSlices` to the number required fits.
         **kwargs: Keyword arguments to be passed to `RandomTreesEmbedding`.
     """
-    criterion = 'mse'
+
+    criterion = "mse"
     max_features = 1
 
-    def __init__(self,
-                 sc=None,
-                 partitions='auto',
-                 n_estimators=100,
-                 max_depth=5,
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.,
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.,
-                 min_impurity_split=None,
-                 sparse_output=True,
-                 n_jobs=None,
-                 random_state=None,
-                 verbose=0,
-                 warm_start=False):
+    def __init__(
+        self,
+        sc=None,
+        partitions="auto",
+        n_estimators=100,
+        max_depth=5,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        min_impurity_split=None,
+        sparse_output=True,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+    ):
         super().__init__(
             base_estimator=ExtraTreeRegressor(),
             n_estimators=n_estimators,
-            estimator_params=("criterion", "max_depth", "min_samples_split",
-                              "min_samples_leaf", "min_weight_fraction_leaf",
-                              "max_features", "max_leaf_nodes",
-                              "min_impurity_decrease", "min_impurity_split",
-                              "random_state"),
+            estimator_params=(
+                "criterion",
+                "max_depth",
+                "min_samples_split",
+                "min_samples_leaf",
+                "min_weight_fraction_leaf",
+                "max_features",
+                "max_leaf_nodes",
+                "min_impurity_decrease",
+                "min_impurity_split",
+                "random_state",
+            ),
             bootstrap=False,
             oob_score=False,
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose,
-            warm_start=warm_start)
+            warm_start=warm_start,
+        )
 
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -618,7 +695,7 @@ class DistRandomTreesEmbedding(DistBaseForest):
 
     def fit_transform(self, X, y=None, sample_weight=None):
         """ Fit estimator and transform dataset """
-        X = check_array(X, accept_sparse=['csc'])
+        X = check_array(X, accept_sparse=["csc"])
         if issparse(X):
             # Pre-sort indices to avoid that each individual tree of the
             # ensemble sorts the indices.
@@ -629,7 +706,8 @@ class DistRandomTreesEmbedding(DistBaseForest):
         super().fit(X, y, sample_weight=sample_weight)
 
         self.one_hot_encoder_ = OneHotEncoder(
-            sparse=self.sparse_output, categories='auto')
+            sparse=self.sparse_output, categories="auto"
+        )
         return self.one_hot_encoder_.fit_transform(self.apply(X))
 
     def transform(self, X):

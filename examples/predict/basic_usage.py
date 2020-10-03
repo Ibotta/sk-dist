@@ -102,7 +102,7 @@ only showing top 20 rows
 print(__doc__)
 
 import pandas as pd
- 
+
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_20newsgroups, load_digits
 from sklearn.linear_model import LogisticRegression
@@ -112,21 +112,14 @@ from skdist.distribute.predict import get_prediction_udf
 from pyspark.sql import SparkSession, functions as F
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # simple 2-D numpy features
 data = load_digits()
 X = data["data"]
 y = data["target"]
-model = LogisticRegression(
-    solver="liblinear", 
-    multi_class="auto"
-    )
+model = LogisticRegression(solver="liblinear", multi_class="auto")
 model.fit(X, y)
 
 # get UDFs with default 'numpy' feature types
@@ -140,24 +133,24 @@ cols = [F.col(str(c)) for c in sdf.columns]
 
 # apply predict UDFs and select prediction output
 prediction_df = (
-    sdf
-    .withColumn("scores", predict_proba(*cols))
+    sdf.withColumn("scores", predict_proba(*cols))
     .withColumn("preds", predict(*cols))
     .select("preds", "scores")
-    )
+)
 prediction_df.show()
 
-# single text feature 
+# single text feature
 data = fetch_20newsgroups(
-    shuffle=True, random_state=1,
-    remove=('headers', 'footers', 'quotes')
-    )
+    shuffle=True, random_state=1, remove=("headers", "footers", "quotes")
+)
 X = data["data"][:100]
 y = data["target"][:100]
-model = Pipeline([
-    ("vec", HashingVectorizer()), 
-    ("clf", LogisticRegression(solver="liblinear", multi_class="auto"))
-    ])
+model = Pipeline(
+    [
+        ("vec", HashingVectorizer()),
+        ("clf", LogisticRegression(solver="liblinear", multi_class="auto")),
+    ]
+)
 model.fit(X, y)
 
 # get UDFs with 'text' feature types
@@ -171,27 +164,32 @@ cols = [F.col(str(c)) for c in sdf.columns]
 
 # apply predict UDFs and select prediction output
 prediction_df = (
-    sdf
-    .withColumn("scores", predict_proba(*cols))
+    sdf.withColumn("scores", predict_proba(*cols))
     .withColumn("preds", predict(*cols))
     .select("preds", "scores")
-    )
+)
 prediction_df.show()
 
 # complex feature space as pandas DataFrame
 X = pd.DataFrame({"text": data["data"][:100]})
 y = data["target"][:100]
-model = Pipeline([
-    ("vec", ColumnTransformer([("text", HashingVectorizer(), "text")])), 
-    ("clf", LogisticRegression(solver="liblinear", multi_class="auto"))
-    ])
+model = Pipeline(
+    [
+        ("vec", ColumnTransformer([("text", HashingVectorizer(), "text")])),
+        ("clf", LogisticRegression(solver="liblinear", multi_class="auto")),
+    ]
+)
 model.fit(X, y)
 
 # get UDFs with 'pandas' feature types
 # NOTE: This time we must supply an ordered list
 # of column names to the `get_predict_udf` function
-predict = get_prediction_udf(model, method="predict", feature_type="pandas", names=list(X.columns))
-predict_proba = get_prediction_udf(model, method="predict_proba", feature_type="pandas", names=list(X.columns))
+predict = get_prediction_udf(
+    model, method="predict", feature_type="pandas", names=list(X.columns)
+)
+predict_proba = get_prediction_udf(
+    model, method="predict_proba", feature_type="pandas", names=list(X.columns)
+)
 
 # create PySpark DataFrame from features
 sdf = spark.createDataFrame(X)
@@ -199,10 +197,8 @@ cols = [F.col(str(c)) for c in sdf.columns]
 
 # apply predict UDFs and select prediction output
 prediction_df = (
-    sdf
-    .withColumn("scores", predict_proba(*cols))
+    sdf.withColumn("scores", predict_proba(*cols))
     .withColumn("preds", predict(*cols))
     .select("preds", "scores")
-    )
+)
 prediction_df.show()
-

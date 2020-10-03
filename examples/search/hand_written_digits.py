@@ -41,11 +41,7 @@ from skdist.distribute.search import DistGridSearchCV
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # the digits dataset
@@ -56,26 +52,22 @@ y = digits["target"]
 # create a classifier: a support vector classifier
 classifier = svm.SVC(gamma="scale")
 param_grid = {
-    "C": [0.01, 0.01, 0.1, 1.0, 10.0], 
-    "gamma": ["scale", "auto", 0.001, 0.01, 0.1], 
-    "kernel": ["rbf", "poly", "sigmoid"]
-    }
+    "C": [0.01, 0.01, 0.1, 1.0, 10.0],
+    "gamma": ["scale", "auto", 0.001, 0.01, 0.1],
+    "kernel": ["rbf", "poly", "sigmoid"],
+}
 scoring = "f1_weighted"
 cv = 10
 
 # hyperparameter optimization
 # total fits: 750
 start = time.time()
-model = DistGridSearchCV(
-    classifier, param_grid, 
-    sc=sc, cv=cv, scoring=scoring
-    )
-model.fit(X,y)
+model = DistGridSearchCV(classifier, param_grid, sc=sc, cv=cv, scoring=scoring)
+model.fit(X, y)
 print("Train time: {0}".format(time.time() - start))
 print("Best score: {0}".format(model.best_score_))
-results = (
-    pd.DataFrame(model.cv_results_)
-    .sort_values("mean_test_score", ascending=False)
-    )
+results = pd.DataFrame(model.cv_results_).sort_values(
+    "mean_test_score", ascending=False
+)
 print("-- CV Results --")
 print(results[["param_C", "param_kernel", "mean_test_score"]].head(10))

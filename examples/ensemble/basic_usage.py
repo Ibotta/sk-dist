@@ -48,22 +48,15 @@ import numpy as np
 
 from skdist.distribute.ensemble import (
     DistRandomForestClassifier,
-    DistExtraTreesClassifier
-    )
-from sklearn.metrics import (
-    f1_score, precision_score, 
-    recall_score, roc_auc_score
-    )
+    DistExtraTreesClassifier,
+)
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_breast_cancer
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # variables
@@ -78,22 +71,23 @@ X = data["data"]
 y = data["target"]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=test_size, random_state=10
-    )
+)
 
 ### distributed random forest
 model = DistRandomForestClassifier(
-    n_estimators=n_estimators, 
-    max_depth=max_depth, sc=sc, 
-    )
+    n_estimators=n_estimators,
+    max_depth=max_depth,
+    sc=sc,
+)
 # distributed fitting with spark
-model.fit(X_train,y_train)
+model.fit(X_train, y_train)
 # predictions on the driver
 preds = model.predict(X_test)
 probs = model.predict_proba(X_test)
 
 # results
 print("-- Random Forest --")
-print("ROC AUC: {0}".format(roc_auc_score(y_test, probs[:,1])))
+print("ROC AUC: {0}".format(roc_auc_score(y_test, probs[:, 1])))
 print("Weighted F1: {0}".format(f1_score(y_test, preds)))
 print("Precision: {0}".format(precision_score(y_test, preds)))
 print("Recall: {0}".format(recall_score(y_test, preds)))
@@ -101,18 +95,19 @@ print(pickle.loads(pickle.dumps(model)))
 
 ### distributed extra trees
 model = DistExtraTreesClassifier(
-    n_estimators=n_estimators, 
-    max_depth=max_depth, sc=sc, 
-    )
+    n_estimators=n_estimators,
+    max_depth=max_depth,
+    sc=sc,
+)
 # distributed fitting with spark
-model.fit(X_train,y_train)
+model.fit(X_train, y_train)
 # predictions on the driver
 preds = model.predict(X_test)
 probs = model.predict_proba(X_test)
 
 # results
 print("-- Extra Trees --")
-print("ROC AUC: {0}".format(roc_auc_score(y_test, probs[:,1])))
+print("ROC AUC: {0}".format(roc_auc_score(y_test, probs[:, 1])))
 print("Weighted F1: {0}".format(f1_score(y_test, preds)))
 print("Precision: {0}".format(precision_score(y_test, preds)))
 print("Recall: {0}".format(recall_score(y_test, preds)))

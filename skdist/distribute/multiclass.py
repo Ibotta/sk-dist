@@ -21,19 +21,16 @@ from sklearn.model_selection import train_test_split, GroupKFold
 
 from .validation import _check_estimator
 from .utils import _safe_split
-from .base import (
-    _clone, _get_value, _parse_partitions
-    )
+from .base import _clone, _get_value, _parse_partitions
 
-__all__ = [
-    "DistOneVsRestClassifier",
-    "DistOneVsOneClassifier"
-]
+__all__ = ["DistOneVsRestClassifier", "DistOneVsOneClassifier"]
+
 
 def _chunks(l, n):
     """ Yield successive n-sized chunks from input list """
     for i in range(0, len(l), n):
-        yield l[i:i + n]
+        yield l[i : i + n]
+
 
 def _split_X(X, n_splits, sc):
     """ Split and broadcast a sparse matrix """
@@ -52,6 +49,7 @@ def _split_X(X, n_splits, sc):
     else:
         return X
 
+
 def _combine_Xs(Xs):
     """ Combine and access values of broadcasted, splitted sparse matrix """
     if isinstance(Xs, list):
@@ -63,6 +61,7 @@ def _combine_Xs(Xs):
     else:
         return Xs
 
+
 def _use_best_estimator(x):
     """ Pull best estimator out of meta-estimator if available """
     estimator_ = x.best_estimator_ if hasattr(x, "best_estimator_") else x
@@ -72,6 +71,7 @@ def _use_best_estimator(x):
             estimator_.cv_results_[col] = estimator_.cv_results_[col].astype(str)
         estimator_.cv_results_ = estimator_.cv_results_.to_dict("list")
     return estimator_
+
 
 def _negatives_mask(X, y, max_negatives=None, random_state=None, method="ratio"):
     """ Limit the number of negative records in training set """
@@ -90,16 +90,32 @@ def _negatives_mask(X, y, max_negatives=None, random_state=None, method="ratio")
         max_negatives = (
             max_negatives
             if isinstance(max_negatives, float)
-            else (max_negatives / float(len(y[~pos_mask]))))
+            else (max_negatives / float(len(y[~pos_mask])))
+        )
         _, X_neg, _, y_neg = train_test_split(
-            X[~pos_mask, :], y[~pos_mask],
-            test_size=max_negatives, random_state=random_state)
+            X[~pos_mask, :],
+            y[~pos_mask],
+            test_size=max_negatives,
+            random_state=random_state,
+        )
         stack_func = vstack if hasattr(X, "nnz") else np.vstack
         return shuffle(
-            stack_func([X[pos_mask, :], X_neg]), np.concatenate([y[pos_mask], y_neg]),
-            random_state=random_state)
+            stack_func([X[pos_mask, :], X_neg]),
+            np.concatenate([y[pos_mask], y_neg]),
+            random_state=random_state,
+        )
 
-def _fit_binary(estimator, X, y, fit_params, classes=None, max_negatives=None, random_state=None, method="ratio"):
+
+def _fit_binary(
+    estimator,
+    X,
+    y,
+    fit_params,
+    classes=None,
+    max_negatives=None,
+    random_state=None,
+    method="ratio",
+):
     """ Fit a single binary estimator """
     X = _combine_Xs(X)
     unique_y = np.unique(y)
@@ -109,19 +125,32 @@ def _fit_binary(estimator, X, y, fit_params, classes=None, max_negatives=None, r
                 c = 0
             else:
                 c = y[0]
-            warnings.warn("Label %s is present in all training examples." %
-                          str(classes[c]))
-        est = _ConstantPredictor().fit(*_negatives_mask(
-            (X.value if hasattr(X, "value") else X), unique_y,
-            max_negatives=max_negatives, random_state=random_state,
-            method=method))
+            warnings.warn(
+                "Label %s is present in all training examples." % str(classes[c])
+            )
+        est = _ConstantPredictor().fit(
+            *_negatives_mask(
+                (X.value if hasattr(X, "value") else X),
+                unique_y,
+                max_negatives=max_negatives,
+                random_state=random_state,
+                method=method,
+            )
+        )
     else:
         est = _clone(_get_value(estimator))
-        est.fit(*_negatives_mask(
-            (X.value if hasattr(X, "value") else X), y,
-            max_negatives=max_negatives, random_state=random_state,
-            method=method), **fit_params)
+        est.fit(
+            *_negatives_mask(
+                (X.value if hasattr(X, "value") else X),
+                y,
+                max_negatives=max_negatives,
+                random_state=random_state,
+                method=method,
+            ),
+            **fit_params
+        )
     return _use_best_estimator(est), classes[1]
+
 
 def _fit_ovo_binary(estimator, X, y, i, j, fit_params):
     """ Fit a single binary estimator (one-vs-one) """
@@ -131,28 +160,37 @@ def _fit_ovo_binary(estimator, X, y, i, j, fit_params):
     y_binary[y_ == i] = 0
     y_binary[y_ == j] = 1
     indcond = np.arange(X.shape[0])[cond]
-    return _fit_binary(estimator,
-                       _safe_split(estimator, X, None, indices=indcond)[0],
-                       y_binary, fit_params, classes=[i, j]), indcond
+    return (
+        _fit_binary(
+            estimator,
+            _safe_split(estimator, X, None, indices=indcond)[0],
+            y_binary,
+            fit_params,
+            classes=[i, j],
+        ),
+        indcond,
+    )
+
 
 class _ConstantPredictor(BaseEstimator):
-    """ Predicts same labels as trained """ 
+    """ Predicts same labels as trained """
+
     def fit(self, X, y):
         self.y_ = y
         return self
 
     def predict(self, X):
-        check_is_fitted(self, 'y_')
+        check_is_fitted(self, "y_")
         return np.repeat(self.y_, X.shape[0])
 
     def decision_function(self, X):
-        check_is_fitted(self, 'y_')
+        check_is_fitted(self, "y_")
         return np.repeat(self.y_, X.shape[0])
 
     def predict_proba(self, X):
-        check_is_fitted(self, 'y_')
-        return np.repeat([np.hstack([1 - self.y_, self.y_])],
-                         X.shape[0], axis=0)
+        check_is_fitted(self, "y_")
+        return np.repeat([np.hstack([1 - self.y_, self.y_])], X.shape[0], axis=0)
+
 
 class DistOneVsRestClassifier(OneVsRestClassifier):
     """
@@ -188,11 +226,22 @@ class DistOneVsRestClassifier(OneVsRestClassifier):
         verbose (bool): print status messages
         **kwargs: Keyword arguments to be passed to `OneVsRestClassifier`.
     """
-    def __init__(self, estimator, sc=None, norm=None, partitions='auto',
-            max_negatives=None, random_state=None, method="ratio",
-            n_splits=1, mlb_override=False, verbose=False, **kwargs):
-        OneVsRestClassifier.__init__(
-            self, estimator, **kwargs)
+
+    def __init__(
+        self,
+        estimator,
+        sc=None,
+        norm=None,
+        partitions="auto",
+        max_negatives=None,
+        random_state=None,
+        method="ratio",
+        n_splits=1,
+        mlb_override=False,
+        verbose=False,
+        **kwargs
+    ):
+        OneVsRestClassifier.__init__(self, estimator, **kwargs)
         self.norm = norm
         self.sc = sc
         self.partitions = partitions
@@ -210,14 +259,17 @@ class DistOneVsRestClassifier(OneVsRestClassifier):
         Args:
             X (array-like, shape = [n_samples, n_features]): input data
             y (array-like, shape = [n_samples, ], [n_samples, n_classes]): multi-class targets
-            **fit_params (dict of string -> object): parameters passed 
+            **fit_params (dict of string -> object): parameters passed
                 to the ``fit`` method of the estimator
         """
         _check_estimator(self, verbose=self.verbose)
 
-        if (not self.mlb_override and not hasattr(y[0], '__array__') 
-                and isinstance(y[0], Sequence)
-                and not isinstance(y[0], str)):
+        if (
+            not self.mlb_override
+            and not hasattr(y[0], "__array__")
+            and isinstance(y[0], Sequence)
+            and not isinstance(y[0], str)
+        ):
             self.mlb = MultiLabelBinarizer()
             y = self.mlb.fit_transform(y)
 
@@ -244,21 +296,39 @@ class DistOneVsRestClassifier(OneVsRestClassifier):
         if self.sc is None:
             models_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(_fit_binary)(
-                    estimator, X, x[1], fit_params, 
+                    estimator,
+                    X,
+                    x[1],
+                    fit_params,
                     classes=["not %s" % x[0], x[0]],
-                    max_negatives=max_negatives, 
-                    random_state=random_state, method=method)
-                for x in list(zip(self.classes_, list(col.toarray().ravel() for col in Y.T))))
+                    max_negatives=max_negatives,
+                    random_state=random_state,
+                    method=method,
+                )
+                for x in list(
+                    zip(self.classes_, list(col.toarray().ravel() for col in Y.T))
+                )
+            )
         else:
             X = _split_X(X, n_splits, self.sc)
             partitions = _parse_partitions(self.partitions, len(self.classes_))
             estimator = self.sc.broadcast(self.estimator)
             columns = self.sc.parallelize(
                 list(zip(self.classes_, list(col.toarray().ravel() for col in Y.T))),
-                numSlices=partitions)
-            models_ = columns.map(lambda x: _fit_binary(
-                estimator, X, x[1], fit_params, classes=["not %s" % x[0], x[0]],
-                max_negatives=max_negatives, random_state=random_state, method=method)).collect()
+                numSlices=partitions,
+            )
+            models_ = columns.map(
+                lambda x: _fit_binary(
+                    estimator,
+                    X,
+                    x[1],
+                    fit_params,
+                    classes=["not %s" % x[0], x[0]],
+                    max_negatives=max_negatives,
+                    random_state=random_state,
+                    method=method,
+                )
+            ).collect()
         estimators_ = [x[0] for x in models_]
         classes_ = [x[1] for x in models_]
         self.estimators_ = list([estimators_[classes_.index(x)] for x in self.classes_])
@@ -273,20 +343,24 @@ class DistOneVsRestClassifier(OneVsRestClassifier):
             X (array-like, shape = [n_samples, n_features]): input data
 
         Returns:
-            T (array-like, shape = [n_samples, n_classes]): returns the probability 
-                of the sample for each class in the model, where classes are 
+            T (array-like, shape = [n_samples, n_classes]): returns the probability
+                of the sample for each class in the model, where classes are
                 ordered as they are in self.classes_
         """
         probs = []
         for index in range(len(self.estimators_)):
-            probs.append(self.estimators_[index].predict_proba(X)[:,1])
-        out = np.array([
-            [probs[y][index] for y in range(len(self.estimators_))]
-            for index in range(len(probs[0]))])
+            probs.append(self.estimators_[index].predict_proba(X)[:, 1])
+        out = np.array(
+            [
+                [probs[y][index] for y in range(len(self.estimators_))]
+                for index in range(len(probs[0]))
+            ]
+        )
         if self.norm:
             return normalize(out, norm=self.norm)
         else:
             return out
+
 
 class DistOneVsOneClassifier(OneVsOneClassifier):
     """
@@ -304,9 +378,9 @@ class DistOneVsOneClassifier(OneVsOneClassifier):
         verbose (bool): print status messages
         **kwargs: Keyword arguments to be passed to `OneVsOneClassifier`.
     """
-    def __init__(self, estimator, sc=None, partitions='auto', verbose=False, **kwargs):
-        OneVsOneClassifier.__init__(
-            self, estimator, **kwargs)
+
+    def __init__(self, estimator, sc=None, partitions="auto", verbose=False, **kwargs):
+        OneVsOneClassifier.__init__(self, estimator, **kwargs)
         self.sc = sc
         self.partitions = partitions
         self.verbose = verbose
@@ -319,18 +393,19 @@ class DistOneVsOneClassifier(OneVsOneClassifier):
             X (array-like, shape = [n_samples, n_features]): intput
                 data
             y (array-like, shape = [n_samples]): Multi-class targets.
-            **fit_params (dict of string -> object): parameters passed 
+            **fit_params (dict of string -> object): parameters passed
                 to the ``fit`` method of the estimator
         """
         _check_estimator(self, verbose=self.verbose)
 
-        X, y = check_X_y(X, y, accept_sparse=['csr', 'csc'])
+        X, y = check_X_y(X, y, accept_sparse=["csr", "csc"])
         check_classification_targets(y)
 
         self.classes_ = np.unique(y)
         if len(self.classes_) == 1:
-            raise ValueError("OneVsOneClassifier can not be fit when only one"
-                             " class is present.")
+            raise ValueError(
+                "OneVsOneClassifier can not be fit when only one" " class is present."
+            )
         n_classes = self.classes_.shape[0]
         class_list = []
         count = -1
@@ -341,26 +416,57 @@ class DistOneVsOneClassifier(OneVsOneClassifier):
         estimator = _clone(self.estimator)
 
         if self.sc is None:
-            estimators_indices = list(zip(*(Parallel(n_jobs=self.n_jobs)(
-                delayed(_fit_ovo_binary)
-                (self.estimator, X, y, self.classes_[i], self.classes_[j], fit_params)
-                for i in range(n_classes) for j in range(i + 1, n_classes)))))
+            estimators_indices = list(
+                zip(
+                    *(
+                        Parallel(n_jobs=self.n_jobs)(
+                            delayed(_fit_ovo_binary)(
+                                self.estimator,
+                                X,
+                                y,
+                                self.classes_[i],
+                                self.classes_[j],
+                                fit_params,
+                            )
+                            for i in range(n_classes)
+                            for j in range(i + 1, n_classes)
+                        )
+                    )
+                )
+            )
             self.estimators_ = [x[0] for x in estimators_indices[0]]
-            self.pairwise_indices_ = (
-                estimators_indices[1] if self._pairwise else None)
+            self.pairwise_indices_ = estimators_indices[1] if self._pairwise else None
         else:
             estimator = self.sc.broadcast(self.estimator)
             partitions = _parse_partitions(self.partitions, len(class_list))
-            estimators_indices = self.sc.parallelize(
-                    class_list,
-                    numSlices=partitions).groupBy(lambda x: x[0]).map(
-                    lambda x: [x[0], _fit_ovo_binary(estimator, X, y, list(x[1])[0][1], list(x[1])[0][2], fit_params)]).collect()
+            estimators_indices = (
+                self.sc.parallelize(class_list, numSlices=partitions)
+                .groupBy(lambda x: x[0])
+                .map(
+                    lambda x: [
+                        x[0],
+                        _fit_ovo_binary(
+                            estimator,
+                            X,
+                            y,
+                            list(x[1])[0][1],
+                            list(x[1])[0][2],
+                            fit_params,
+                        ),
+                    ]
+                )
+                .collect()
+            )
 
-            estimators_indices = [estimators_indices[i][1] for i in np.argsort([x[0] for x in estimators_indices])]
+            estimators_indices = [
+                estimators_indices[i][1]
+                for i in np.argsort([x[0] for x in estimators_indices])
+            ]
             self.estimators_ = [x[0][0] for x in estimators_indices]
             try:
                 self.pairwise_indices_ = (
-                    [x[1] for x in estimators_indices] if self._pairwise else None)
+                    [x[1] for x in estimators_indices] if self._pairwise else None
+                )
             except AttributeError:
                 self.pairwise_indices_ = None
         del self.sc

@@ -7,44 +7,54 @@ with PySpark DataFrames
 import pandas as pd
 import numpy as np
 
+
 class PysparkRequired(ImportError):
     pass
+
 
 class PyarrowRequired(ImportError):
     pass
 
+
 _PYSPARK_INSTALLED = None
 _PYARROW_INSTALLED = None
+
 
 def _is_pyspark_installed():
     global _PYSPARK_INSTALLED
     if _PYSPARK_INSTALLED is None:
         try:
             import pyspark
+
             _PYSPARK_INSTALLED = True
         except ImportError:
             _PYSPARK_INSTALLED = False
 
     if _PYSPARK_INSTALLED:
         import pyspark
+
         return True
     else:
         return False
+
 
 def _is_pyarrow_installed():
     global _PYARROW_INSTALLED
     if _PYARROW_INSTALLED is None:
         try:
             import pyarrow
+
             _PYARROW_INSTALLED = True
         except ImportError:
             _PYARROW_INSTALLED = False
 
     if _PYARROW_INSTALLED:
         import pyarrow
+
         return True
     else:
         return False
+
 
 def _get_vals(*cols, feature_type="numpy", names=None):
     """ Prep input data for prediction method """
@@ -60,19 +70,20 @@ def _get_vals(*cols, feature_type="numpy", names=None):
         raise ValueError("Unknown feature_type: {0}".format(feature_type))
     return vals
 
+
 def get_prediction_udf(model, method="predict", feature_type="numpy", names=None):
     """
-    Build a vectorized PySpark UDF to apply a sklearn model's `predict` or 
+    Build a vectorized PySpark UDF to apply a sklearn model's `predict` or
     `predict_proba` methods columns in a PySpark DataFrame. Handles
     flexible types of feature data for prediction including 2-D numpy
     arrays ('numpy'), single field text data ('text') and mixed type
-    pandas DataFrames ('pandas'). The UDF can then be applied as shown in the 
+    pandas DataFrames ('pandas'). The UDF can then be applied as shown in the
     example below.
 
     NOTE: This function requires pyarrow and pyspark with appropriate
     versions for vectorized pandas UDFs and appropriate spark configuration
-    to use pyarrow. Ths requires pyarrow>=0.8.0 and pyspark>=2.3.0. 
-    Additionally, the spark version must be 2.3 or higher. These requirements 
+    to use pyarrow. Ths requires pyarrow>=0.8.0 and pyspark>=2.3.0.
+    Additionally, the spark version must be 2.3 or higher. These requirements
     are not enforced by the sk-dist package at setup time.
 
     Args:
@@ -85,7 +96,7 @@ def get_prediction_udf(model, method="predict", feature_type="numpy", names=None
         names (array-like): list of ordered column names
             (only necessary for 'pandas' feature_type
     Returns:
-        PySpark pandas UDF (pyspark.sql.functions.pandas_udf)    
+        PySpark pandas UDF (pyspark.sql.functions.pandas_udf)
     Example:
     >>> import pandas as pd
     >>> from sklearn.datasets import load_digits
@@ -112,7 +123,7 @@ def get_prediction_udf(model, method="predict", feature_type="numpy", names=None
     >>>     .withColumn("preds", predict(*cols))
     >>>     .select("preds", "scores")
     >>>     )
-    >>> prediction_df.show() 
+    >>> prediction_df.show()
     ... +-----+--------------------+
     ... |preds|              scores|
     ... +-----+--------------------+
@@ -137,37 +148,31 @@ def get_prediction_udf(model, method="predict", feature_type="numpy", names=None
     ... |    8|[2.38739344440480...|
     ... |    9|[8.23628591704589...|
     ... +-----+--------------------+
-    ... only showing top 20 rows   
+    ... only showing top 20 rows
     """
     if not _is_pyspark_installed():
         raise ImportError("Module pyspark not found")
     if not _is_pyarrow_installed():
         raise ImportError("Module pyarrow not found")
     from pyspark.sql import functions as F
-    from pyspark.sql.types import (
-        DoubleType, StringType, IntegerType, ArrayType
-        )
+    from pyspark.sql.types import DoubleType, StringType, IntegerType, ArrayType
 
     if method == "predict":
+
         def predict_func(*cols):
-            vals = _get_vals(
-                *cols, feature_type=feature_type, 
-                names=names
-                )
+            vals = _get_vals(*cols, feature_type=feature_type, names=names)
             return pd.Series(model.predict(vals))
+
         return_type = (
-            StringType() 
-            if isinstance(model.classes_[0], str) 
-            else IntegerType()
-            )
+            StringType() if isinstance(model.classes_[0], str) else IntegerType()
+        )
         predict = F.pandas_udf(predict_func, returnType=return_type)
-    elif method == "predict_proba":  
+    elif method == "predict_proba":
+
         def predict_func(*cols):
-            vals = _get_vals(
-                *cols, feature_type=feature_type, 
-                names=names
-                )
+            vals = _get_vals(*cols, feature_type=feature_type, names=names)
             return pd.Series(list(model.predict_proba(vals)))
+
         predict = F.pandas_udf(predict_func, returnType=ArrayType(DoubleType()))
     else:
         raise ValueError("Unknown method: {0}".format(method))

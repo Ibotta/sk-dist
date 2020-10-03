@@ -29,20 +29,17 @@ from skdist.distribute.search import DistGridSearchCV
 from skdist.distribute.encoder import Encoderizer
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # load two categories of 20 newsgroups dataset
-categories = ['alt.atheism', 'talk.religion.misc']
+categories = ["alt.atheism", "talk.religion.misc"]
 dataset = fetch_20newsgroups(
-    shuffle=True, random_state=1,
-    remove=('headers', 'footers', 'quotes'),
-    categories=categories
-    )
+    shuffle=True,
+    random_state=1,
+    remove=("headers", "footers", "quotes"),
+    categories=categories,
+)
 
 # variables
 cv = 5
@@ -62,28 +59,26 @@ X_t = encoder.fit_transform(df)
 # train logistic regression
 lr = DistGridSearchCV(
     LogisticRegression(solver="liblinear"),
-    dict(C=[0.1, 1.0, 10.0]), sc, 
-    scoring=scoring, cv=cv
-    )
+    dict(C=[0.1, 1.0, 10.0]),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 lr.fit(X_t, dataset["target"])
 
 # train random forest
 rf = DistGridSearchCV(
     RandomForestClassifier(n_estimators=10),
-    dict(max_depth=[5,10]), sc, 
-    scoring=scoring, cv=cv
-    )
+    dict(max_depth=[5, 10]),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 rf.fit(X_t, dataset["target"])
 
 # assemble voter and pipeline
-voter = SimpleVoter(
-    [("lr", lr),("rf", rf)], 
-    classes=model.classes_, 
-    voting="hard"
-    )
-model = Pipeline(
-    steps=[("vec", encoder), ("clf", voter)]
-    )
-    
-# make predictions 
+voter = SimpleVoter([("lr", lr), ("rf", rf)], classes=model.classes_, voting="hard")
+model = Pipeline(steps=[("vec", encoder), ("clf", voter)])
+
+# make predictions
 preds = model.predict(df)

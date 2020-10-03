@@ -58,11 +58,7 @@ from skdist.distribute.ensemble import DistRandomForestClassifier
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # params
@@ -72,31 +68,42 @@ params = [0.01, 0.1, 1.0, 10.0, 20.0, 50.0]
 
 # create dataset
 X, y = make_classification(
-    n_samples=100000, n_features=40, n_informative=36, 
-    n_redundant=1, n_repeated=1, n_classes=40, 
-    n_clusters_per_class=1, random_state=5
-    )
-    
+    n_samples=100000,
+    n_features=40,
+    n_informative=36,
+    n_redundant=1,
+    n_repeated=1,
+    n_classes=40,
+    n_clusters_per_class=1,
+    random_state=5,
+)
+
 # one nested example
 model = DistGridSearchCV(
-    DistOneVsRestClassifier(LogisticRegression(solver="liblinear"), sc=sc), 
-    {"estimator__C": params}, cv=cv, scoring=scoring
-    )
-model.fit(X,y)
+    DistOneVsRestClassifier(LogisticRegression(solver="liblinear"), sc=sc),
+    {"estimator__C": params},
+    cv=cv,
+    scoring=scoring,
+)
+model.fit(X, y)
 print(pd.DataFrame(model.cv_results_)[["mean_test_score", "param_estimator__C"]])
 
 # another nested example
 model = DistGridSearchCV(
-    DistOneVsOneClassifier(LogisticRegression(solver="liblinear"), sc=sc),  
-    {"estimator__C": params}, cv=cv, scoring=scoring
-    )
-model.fit(X,y)
+    DistOneVsOneClassifier(LogisticRegression(solver="liblinear"), sc=sc),
+    {"estimator__C": params},
+    cv=cv,
+    scoring=scoring,
+)
+model.fit(X, y)
 print(pd.DataFrame(model.cv_results_)[["mean_test_score", "param_estimator__C"]])
 
 # a final nested example
 model = DistGridSearchCV(
-    DistRandomForestClassifier(sc=sc, n_estimators=100), 
-    {"max_depth": [10, 20, None], "n_estimators": [100]}, cv=cv, scoring=scoring
-    )
-model.fit(X,y)
+    DistRandomForestClassifier(sc=sc, n_estimators=100),
+    {"max_depth": [10, 20, None], "n_estimators": [100]},
+    cv=cv,
+    scoring=scoring,
+)
+model.fit(X, y)
 print(pd.DataFrame(model.cv_results_)[["mean_test_score", "param_max_depth"]])

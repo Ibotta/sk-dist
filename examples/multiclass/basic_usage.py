@@ -76,24 +76,15 @@ import pickle
 import pandas as pd
 import numpy as np
 
-from skdist.distribute.multiclass import (
-    DistOneVsRestClassifier,
-    DistOneVsOneClassifier
-    )
-from sklearn.metrics import (
-    f1_score, precision_score, recall_score
-    )
+from skdist.distribute.multiclass import DistOneVsRestClassifier, DistOneVsOneClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_digits
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # variables
@@ -107,7 +98,7 @@ X = data["data"]
 y = data["target"]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=test_size, random_state=10
-    )
+)
 
 ### distributed one vs rest
 model = DistOneVsRestClassifier(LogisticRegression(solver=solver), sc)

@@ -13,10 +13,7 @@ try:
 except ImportError:
     pass
 
-from sklearn.datasets import (
-    load_breast_cancer,
-    load_digits
-    )
+from sklearn.datasets import load_breast_cancer, load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 
@@ -31,6 +28,7 @@ from skdist.distribute.search import DistGridSearchCV, DistRandomizedSearchCV
 from skdist.distribute.ensemble import DistRandomForestClassifier
 from skdist.distribute.predict import get_prediction_udf
 
+
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_spark_session_dataframe(spark_session):
     test_df = spark_session.createDataFrame([[1, 3], [2, 4]], "a: int, b: int")
@@ -38,13 +36,15 @@ def test_spark_session_dataframe(spark_session):
     assert type(test_df) == pyspark.sql.dataframe.DataFrame
     assert test_df.count() == 2
 
+
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_spark_session_sql(spark_session):
     test_df = spark_session.createDataFrame([[1, 3], [2, 4]], "a: int, b: int")
-    test_df.createOrReplaceTempView('test')
+    test_df.createOrReplaceTempView("test")
 
-    test_filtered_df = spark_session.sql('SELECT a, b from test where a > 1')
+    test_filtered_df = spark_session.sql("SELECT a, b from test where a > 1")
     assert test_filtered_df.count() == 1
+
 
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_ensemble(spark_session):
@@ -65,7 +65,8 @@ def test_ensemble(spark_session):
     ### distributed random forest
     model = DistRandomForestClassifier(
         n_estimators=n_estimators,
-        max_depth=max_depth, sc=sc,
+        max_depth=max_depth,
+        sc=sc,
     )
     # distributed fitting with spark
     model.fit(X_train, y_train)
@@ -73,6 +74,7 @@ def test_ensemble(spark_session):
     preds = model.predict(X_test)
 
     assert preds.shape == y_test.shape
+
 
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_search(spark_session):
@@ -95,8 +97,7 @@ def test_search(spark_session):
 
     ### distributed grid search
     model = DistGridSearchCV(
-        LogisticRegression(solver=solver),
-        dict(C=Cs), sc, cv=cv, scoring=scoring
+        LogisticRegression(solver=solver), dict(C=Cs), sc, cv=cv, scoring=scoring
     )
     # distributed fitting with spark
     model.fit(X_train, y_train)
@@ -104,6 +105,7 @@ def test_search(spark_session):
     preds = model.predict(X_test)
 
     assert preds.shape == y_test.shape
+
 
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_multiclass(spark_session):
@@ -130,6 +132,7 @@ def test_multiclass(spark_session):
 
     assert preds.shape == y_test.shape
 
+
 @pytest.mark.skipif("pyspark" not in sys.modules, reason="requires pyspark")
 def test_predict(spark_session):
     sc = spark_session.sparkContext
@@ -138,10 +141,7 @@ def test_predict(spark_session):
     data = load_digits()
     X = data["data"]
     y = data["target"]
-    model = LogisticRegression(
-        solver="liblinear",
-        multi_class="auto"
-    )
+    model = LogisticRegression(solver="liblinear", multi_class="auto")
     model.fit(X, y)
 
     # get UDFs with default 'numpy' feature types
@@ -155,31 +155,33 @@ def test_predict(spark_session):
 
     # apply predict UDFs and select prediction output
     prediction_df = (
-        sdf
-            .withColumn("scores", predict_proba(*cols))
-            .withColumn("preds", predict(*cols))
-            .select("preds", "scores")
+        sdf.withColumn("scores", predict_proba(*cols))
+        .withColumn("preds", predict(*cols))
+        .select("preds", "scores")
     )
     assert prediction_df.count() == X.shape[0]
 
-@pytest.mark.skipif(("pyspark" not in sys.modules) or ("xgboost" not in sys.modules), reason="requires pyspark and xgboost")
+
+@pytest.mark.skipif(
+    ("pyspark" not in sys.modules) or ("xgboost" not in sys.modules),
+    reason="requires pyspark and xgboost",
+)
 def test_xgboost(spark_session):
     sc = spark_session.sparkContext
 
-    X = np.array([[1,1,1], [0,0,0], [-1,-1,-1]]*100)
-    y = np.array([0,0,1]*100)
+    X = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]] * 100)
+    y = np.array([0, 0, 1] * 100)
 
     clf = DistRandomizedSearchCV(
-        XGBClassifier(), {"max_depth": [3,5]},
-        cv=3, n_iter=2, sc=sc
-        )
-    X_test = np.array([[1,1,0], [-2,0,5], [1,1,1]]*10)
-    y_test = np.array([1,1,0]*10)
+        XGBClassifier(), {"max_depth": [3, 5]}, cv=3, n_iter=2, sc=sc
+    )
+    X_test = np.array([[1, 1, 0], [-2, 0, 5], [1, 1, 1]] * 10)
+    y_test = np.array([1, 1, 0] * 10)
     fit_params = {
-        'eval_metric': 'logloss',
-        'eval_set': [(X_test, y_test)],
-        'early_stopping_rounds': 10
-        }
+        "eval_metric": "logloss",
+        "eval_set": [(X_test, y_test)],
+        "early_stopping_rounds": 10,
+    }
     clf.fit(X, y, **fit_params)
     preds = clf.predict(X[:3])
-    assert np.allclose(preds, np.array([0,0,1]))
+    assert np.allclose(preds, np.array([0, 0, 1]))

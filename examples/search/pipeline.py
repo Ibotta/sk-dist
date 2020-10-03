@@ -26,45 +26,59 @@ from pyspark.sql import SparkSession
 
 # load 20newsgroups dataset
 dataset = fetch_20newsgroups(
-    shuffle=True, random_state=1,
-    remove=('headers', 'footers', 'quotes')
-    )
+    shuffle=True, random_state=1, remove=("headers", "footers", "quotes")
+)
 
-# variables 
+# variables
 cv = 10
 scoring = "f1_weighted"
 X = dataset["data"]
 y = dataset["target"]
 
 # instantiate a pipeline and grid
-pipe = Pipeline(steps=[
-    ("vec", TfidfVectorizer(decode_error="ignore", analyzer="word")), 
-    ("svd", TruncatedSVD()),
-    ("clf", LogisticRegression(solver="liblinear", multi_class="auto"))
-    ])
+pipe = Pipeline(
+    steps=[
+        ("vec", TfidfVectorizer(decode_error="ignore", analyzer="word")),
+        ("svd", TruncatedSVD()),
+        ("clf", LogisticRegression(solver="liblinear", multi_class="auto")),
+    ]
+)
 params = {
-    "clf__C": [0.1, 1.0, 10.0], 
-    "vec__ngram_range": [(1,1), (1,2)], 
-    "svd__n_components": [50, 100]
-    }
-    
+    "clf__C": [0.1, 1.0, 10.0],
+    "vec__ngram_range": [(1, 1), (1, 2)],
+    "svd__n_components": [50, 100],
+}
+
 # fit and select hyperparameters with skdist
-model0 = DistGridSearchCV(
-    pipe, params, sc, 
-    scoring=scoring, cv=cv
-    )
+model0 = DistGridSearchCV(pipe, params, sc, scoring=scoring, cv=cv)
 model0.fit(X, y)
-print("A Pipeline used as the base estimator for DistGridSearchCV: {0}".format(model0.best_score_))
+print(
+    "A Pipeline used as the base estimator for DistGridSearchCV: {0}".format(
+        model0.best_score_
+    )
+)
 
 # assemble a pipeline with skdist distributed
 # grid search as the final estimator step
-model1 = Pipeline(steps=[
-    ("vec", TfidfVectorizer(decode_error="ignore", analyzer="word")), 
-    ("svd", TruncatedSVD(n_components=50)),
-    ("clf", DistGridSearchCV(
-        LogisticRegression(solver="liblinear", multi_class="auto"), 
-        {"C": [0.1, 1.0, 10.0]}, sc, scoring=scoring, cv=cv
-        ))
-    ])
+model1 = Pipeline(
+    steps=[
+        ("vec", TfidfVectorizer(decode_error="ignore", analyzer="word")),
+        ("svd", TruncatedSVD(n_components=50)),
+        (
+            "clf",
+            DistGridSearchCV(
+                LogisticRegression(solver="liblinear", multi_class="auto"),
+                {"C": [0.1, 1.0, 10.0]},
+                sc,
+                scoring=scoring,
+                cv=cv,
+            ),
+        ),
+    ]
+)
 model1.fit(X, y)
-print("DistGridSearchCV at the end of a Pipeline: {0}".format(model1.steps[-1][1].best_score_))
+print(
+    "DistGridSearchCV at the end of a Pipeline: {0}".format(
+        model1.steps[-1][1].best_score_
+    )
+)
