@@ -117,20 +117,15 @@ char_params = {
 char_model = DistGridSearchCV(char_pipe, char_params, sc=sc, cv=cv, scoring=scoring)
 
 # define word/character vector -> feature selection -> tree ensemble
+feature_union = FeatureUnion(
+    [
+        ("word", CountVectorizer(analyzer="word", decode_error="ignore")),
+        ("char", CountVectorizer(analyzer="char_wb", decode_error="ignore")),
+    ]
+)
 both_model = Pipeline(
     steps=[
-        (
-            "vec",
-            FeatureUnion(
-                [
-                    ("word", CountVectorizer(analyzer="word", decode_error="ignore")),
-                    (
-                        "char",
-                        CountVectorizer(analyzer="char_wb", decode_error="ignore"),
-                    ),
-                ]
-            ),
-        ),
+        ("vec", feature_union),
         ("select", SelectKBest(f_classif, 1000)),
         ("clf", DistExtraTreesClassifier(n_estimators=1000, max_depth=None, sc=sc)),
     ]
