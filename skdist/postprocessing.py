@@ -99,7 +99,7 @@ class SimpleVoter(BaseEstimator, ClassifierMixin):
         """ Predict class probabilities for X in 'soft' voting """
         if self.voting == "hard":
             raise AttributeError(
-                "predict_proba is not available when" " voting=%r" % self.voting
+                "predict_proba is not available when voting=%r" % self.voting
             )
         _check_is_fitted(self, "estimators_")
         avg = np.average(

@@ -236,30 +236,11 @@ def _fit_and_score(
         if error_score == "raise":
             raise
         elif isinstance(error_score, numbers.Number):
+            score_dict = dict(list(zip(list(scorer.keys()), [error_score] * n_scorers)))
             if is_multimetric:
-                test_scores = dict(
-                    list(
-                        zip(
-                            list(scorer.keys()),
-                            [
-                                error_score,
-                            ]
-                            * n_scorers,
-                        )
-                    )
-                )
+                test_scores = score_dict
                 if return_train_score:
-                    train_scores = dict(
-                        list(
-                            zip(
-                                list(scorer.keys()),
-                                [
-                                    error_score,
-                                ]
-                                * n_scorers,
-                            )
-                        )
-                    )
+                    train_scores = score_dict
             else:
                 test_scores = error_score
                 if return_train_score:

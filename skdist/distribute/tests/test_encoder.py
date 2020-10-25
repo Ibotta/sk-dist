@@ -85,14 +85,7 @@ def test_dict_list_tuple():
             "categorical_int_col": [0, 1, 2] * 4,
             "numeric_col": [5, 22, 69] * 4,
             "dict_col": [{"a": 4}, {"b": 1}, {"c": 3}] * 4,
-            "list_col": [
-                [1, 2],
-                [1, 3],
-                [
-                    2,
-                ],
-            ]
-            * 4,
+            "list_col": [[1, 2], [1, 3], [2]] * 4,
             "tuple_col": [(1, 2), (1, 3), (2,)] * 4,
         }
     )

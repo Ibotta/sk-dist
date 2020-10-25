@@ -294,7 +294,7 @@ class HashingVectorizerChunked(HashingVectorizer):
     def _transform(self, X):
         if isinstance(X, str):
             raise ValueError(
-                "Iterable over raw text documents expected, " "string object received."
+                "Iterable over raw text documents expected, string object received."
             )
 
         analyzer = self.build_analyzer()
