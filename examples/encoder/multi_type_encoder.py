@@ -31,39 +31,37 @@ from sklearn.linear_model import LogisticRegression
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # create some data
 text = [
     "this is a text encoding example",
     "more random text for the example",
-    "even more random text"
-    ]
+    "even more random text",
+]
 
-df = pd.DataFrame({
-    "text_col": text*4,
-    "categorical_str_col": ["control", "treatment", "control"]*4,
-    "categorical_int_col": [0, 1, 2]*4,
-    "numeric_col": [5, 22, 69]*4,
-    "dict_col": [{"a": 4}, {"b": 1}, {"c": 3}]*4,
-    "multilabel_col": [[1, 2], [1, 3], [2,]]*4,
-    "target": [1, 0, 1]*4
-    })
+df = pd.DataFrame(
+    {
+        "text_col": text * 4,
+        "categorical_str_col": ["control", "treatment", "control"] * 4,
+        "categorical_int_col": [0, 1, 2] * 4,
+        "numeric_col": [5, 22, 69] * 4,
+        "dict_col": [{"a": 4}, {"b": 1}, {"c": 3}] * 4,
+        "multilabel_col": [[1, 2], [1, 3], [2]] * 4,
+        "target": [1, 0, 1] * 4,
+    }
+)
 
 # define encoder config
 encoder_config = {
     "text_col": "string_vectorizer",
-    "categorical_str_col": "onehotencoder", 
+    "categorical_str_col": "onehotencoder",
     "categorical_int_col": "onehotencoder",
     "numeric_col": "numeric",
     "dict_col": "dict",
-    "multilabel_col": "multihotencoder"
-    }
+    "multilabel_col": "multihotencoder",
+}
 
 # variables
 Cs = [0.1, 1.0, 10.0]
@@ -78,9 +76,12 @@ print([i[0] for i in encoder.transformer_list])
 
 # define and fit model
 model = DistGridSearchCV(
-    LogisticRegression(solver=solver, multi_class="auto"), 
-    dict(C=Cs), sc, scoring=scoring, cv=cv
-    )
+    LogisticRegression(solver=solver, multi_class="auto"),
+    dict(C=Cs),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 
 model.fit(df_transformed, df["target"])
 print(model.best_score_)

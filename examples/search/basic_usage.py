@@ -73,20 +73,13 @@ import pickle
 import pandas as pd
 import numpy as np
 
-from skdist.distribute.search import (
-    DistGridSearchCV,
-    DistRandomizedSearchCV
-    )
+from skdist.distribute.search import DistGridSearchCV, DistRandomizedSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import load_breast_cancer
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # sklearn variables
@@ -103,11 +96,10 @@ y = data["target"]
 
 ### distributed grid search
 model = DistGridSearchCV(
-    LogisticRegression(solver=solver), 
-    dict(C=Cs), sc, cv=cv, scoring=scoring
-    )
+    LogisticRegression(solver=solver), dict(C=Cs), sc, cv=cv, scoring=scoring
+)
 # distributed fitting with spark
-model.fit(X,y)
+model.fit(X, y)
 # predictions on the driver
 preds = model.predict(X)
 probs = model.predict_proba(X)
@@ -123,12 +115,15 @@ print(pickle.loads(pickle.dumps(model)))
 ### distributed randomized search
 param_dist = dict(C=[])
 model = DistRandomizedSearchCV(
-    LogisticRegression(solver=solver), 
-    dict(C=Cs), sc, cv=cv, 
-    scoring=scoring, n_iter=n_iter
-    )
+    LogisticRegression(solver=solver),
+    dict(C=Cs),
+    sc,
+    cv=cv,
+    scoring=scoring,
+    n_iter=n_iter,
+)
 # distributed fitting with spark
-model.fit(X,y)
+model.fit(X, y)
 # predictions on the driver
 preds = model.predict(X)
 probs = model.predict_proba(X)

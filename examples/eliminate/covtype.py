@@ -43,11 +43,7 @@ from sklearn.datasets import fetch_covtype
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # params
@@ -56,20 +52,18 @@ cv = 5
 min_features_to_select = 10
 
 # load data and define base classifier
-X,y = fetch_covtype(return_X_y=True)
+X, y = fetch_covtype(return_X_y=True)
 clf = RandomForestClassifier(n_estimators=100, max_depth=10)
 
 # eliminate features, keeping at least 10
 start = time.time()
 model = DistFeatureEliminator(
-    clf, sc=sc, scoring=scoring, cv=cv, 
-    min_features_to_select=min_features_to_select
-    )
-model.fit(X,y)
+    clf, sc=sc, scoring=scoring, cv=cv, min_features_to_select=min_features_to_select
+)
+model.fit(X, y)
 print("-- skdist DistFeatureEliminator --")
-print("Fit Time: {0}".format(round(time.time() - start,4)))
+print("Fit Time: {0}".format(round(time.time() - start, 4)))
 print("N Features Selected: {0}".format(model.n_features_))
 print("Best Score: {0}".format(model.best_score_))
 print("Score w/ All Features: {0}".format(model.scores_[0]))
 print("Feature Elimination Lift: {0}".format(model.best_score_ - model.scores_[0]))
-

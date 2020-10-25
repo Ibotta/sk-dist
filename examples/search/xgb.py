@@ -79,22 +79,12 @@ print(__doc__)
 import pickle
 
 from skdist.distribute.search import DistGridSearchCV
-from sklearn.datasets import (
-  load_breast_cancer,
-  load_boston
-)
-from xgboost import (
-  XGBClassifier,
-  XGBRegressor
-)
+from sklearn.datasets import load_breast_cancer, load_boston
+from xgboost import XGBClassifier, XGBRegressor
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 ### XGBClassifier ###
@@ -110,19 +100,16 @@ X = data["data"]
 y = data["target"]
 
 grid = dict(
-    learning_rate=[.05, .01],
+    learning_rate=[0.05, 0.01],
     max_depth=[4, 6, 8],
-    colsample_bytree=[.6, .8, 1.0],
-    n_estimators=[100, 200, 300]
+    colsample_bytree=[0.6, 0.8, 1.0],
+    n_estimators=[100, 200, 300],
 )
 
 ### distributed grid search
-model = DistGridSearchCV(
-    XGBClassifier(),
-    grid, sc, cv=cv, scoring=clf_scoring
-    )
+model = DistGridSearchCV(XGBClassifier(), grid, sc, cv=cv, scoring=clf_scoring)
 # distributed fitting with spark
-model.fit(X,y)
+model.fit(X, y)
 # predictions on the driver
 preds = model.predict(X)
 probs = model.predict_proba(X)
@@ -144,19 +131,18 @@ X = data["data"]
 y = data["target"]
 
 grid = dict(
-    learning_rate=[.05, .01],
+    learning_rate=[0.05, 0.01],
     max_depth=[4, 6, 8],
-    colsample_bytree=[.6, .8, 1.0],
-    n_estimators=[100, 200, 300]
+    colsample_bytree=[0.6, 0.8, 1.0],
+    n_estimators=[100, 200, 300],
 )
 
 ### distributed grid search
 model = DistGridSearchCV(
-    XGBRegressor(objective='reg:squarederror'),
-    grid, sc, cv=cv, scoring=reg_scoring
-    )
+    XGBRegressor(objective="reg:squarederror"), grid, sc, cv=cv, scoring=reg_scoring
+)
 # distributed fitting with spark
-model.fit(X,y)
+model.fit(X, y)
 # predictions on the driver
 preds = model.predict(X)
 

@@ -60,18 +60,14 @@ from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # load data
 data = fetch_covtype()
 X = data["data"]
 y = data["target"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=4)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=4)
 
 # initial scaling
 scaler = StandardScaler()
@@ -82,47 +78,48 @@ X_test_t = scaler.transform(X_test)
 start = time.time()
 lr = LogisticRegression(solver="lbfgs", multi_class="auto")
 model = DistGridSearchCV(
-    lr, {"C": [10.0, 1.0, 0.1, 0.01]}, 
-    sc=sc, cv=5, scoring="f1_weighted"
-    )
+    lr, {"C": [10.0, 1.0, 0.1, 0.01]}, sc=sc, cv=5, scoring="f1_weighted"
+)
 model.fit(X_train_t, y_train)
 print("-- sk-dist LR --")
 print("Train Time: {0}".format(time.time() - start))
 print("Best Model CV Score: {0}".format(model.best_score_))
-print("Holdout F1: {0}".format(f1_score(y_test, model.predict(X_test_t), average="weighted")))
+print(
+    "Holdout F1: {0}".format(
+        f1_score(y_test, model.predict(X_test_t), average="weighted")
+    )
+)
 
-# sk-dist random forest 
+# sk-dist random forest
 start = time.time()
 rf = DistRandomForestClassifier(n_estimators=100, max_depth=None, sc=sc)
 rf.fit(X_train_t, y_train)
 print("-- sk-dist RF --")
 print("Train Time: {0}".format(time.time() - start))
-print("Holdout F1: {0}".format(f1_score(y_test, rf.predict(X_test_t), average="weighted")))
+print(
+    "Holdout F1: {0}".format(f1_score(y_test, rf.predict(X_test_t), average="weighted"))
+)
 
 # spark-ify scaled training data
 pandas_df = pd.DataFrame(X_train_t)
 pandas_df["label"] = y_train
 spark_df = spark.createDataFrame(pandas_df)
 assembler = VectorAssembler(
-    inputCols=[str(a) for a in pandas_df.columns[:-1]], 
-    outputCol="features"
-    )
-    
+    inputCols=[str(a) for a in pandas_df.columns[:-1]], outputCol="features"
+)
+
 # spark ML logistic regression w/ grid seach
 start = time.time()
 lr = LR()
 pipeline = Pipeline(stages=[assembler, lr])
-paramGrid = (
-    ParamGridBuilder()
-    .addGrid(lr.regParam, [10.0, 1.0, 0.1, 0.01]) 
-    .build()
-    )
+paramGrid = ParamGridBuilder().addGrid(lr.regParam, [10.0, 1.0, 0.1, 0.01]).build()
 crossval = CrossValidator(
     estimator=pipeline,
     estimatorParamMaps=paramGrid,
     evaluator=MulticlassClassificationEvaluator(),
-    numFolds=5, parallelism=8
-    )
+    numFolds=5,
+    parallelism=8,
+)
 cvModel = crossval.fit(spark_df)
 print("-- spark ML LR --")
 print("Train Time: {0}".format(time.time() - start))
@@ -135,7 +132,7 @@ eval_df = spark.createDataFrame(pandas_df)
 evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
 print("Holdout F1: {0}".format(evaluator.evaluate(cvModel.transform(spark_df))))
 
-# random forest with spark ML 
+# random forest with spark ML
 start = time.time()
 rf = RandomForestClassifier(numTrees=100, maxDepth=30)
 pipeline = Pipeline(stages=[assembler, rf])

@@ -69,62 +69,67 @@ from sklearn.datasets import fetch_20newsgroups
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # load 20newsgroups dataset
-categories = ['alt.atheism', 'talk.religion.misc']
+categories = ["alt.atheism", "talk.religion.misc"]
 dataset = fetch_20newsgroups(
-    shuffle=True, random_state=1,
-    remove=('headers', 'footers', 'quotes'),
-    categories=categories
-    )
-    
+    shuffle=True,
+    random_state=1,
+    remove=("headers", "footers", "quotes"),
+    categories=categories,
+)
+
 # parameters, data load and train/test split
 scoring = "roc_auc"
 cv = 5
 X = dataset["data"]
 y = dataset["target"]
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=2)
-    
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=2)
+
 # define word vector -> regression model
-word_pipe = Pipeline(steps=[
-    ("vec", HashingVectorizer(analyzer="word", decode_error="ignore")), 
-    ("clf", LogisticRegression())
-    ])
+word_pipe = Pipeline(
+    steps=[
+        ("vec", HashingVectorizer(analyzer="word", decode_error="ignore")),
+        ("clf", LogisticRegression()),
+    ]
+)
 word_params = {
-    "vec__ngram_range": [(1,1), (1,2), (1,3), (1,4), (2,4)], 
-    "clf__C": [0.1, 1.0, 10.0], 
-    "clf__solver": ["liblinear", "lbfgs"]
-    }
+    "vec__ngram_range": [(1, 1), (1, 2), (1, 3), (1, 4), (2, 4)],
+    "clf__C": [0.1, 1.0, 10.0],
+    "clf__solver": ["liblinear", "lbfgs"],
+}
 word_model = DistGridSearchCV(word_pipe, word_params, sc=sc, cv=cv, scoring=scoring)
 
 # define character vector -> regression model
-char_pipe = Pipeline(steps=[
-    ("vec", HashingVectorizer(analyzer="char_wb", decode_error="ignore")), 
-    ("clf", LogisticRegression())
-    ])
+char_pipe = Pipeline(
+    steps=[
+        ("vec", HashingVectorizer(analyzer="char_wb", decode_error="ignore")),
+        ("clf", LogisticRegression()),
+    ]
+)
 char_params = {
-    "vec__ngram_range": [(2,2), (2,3), (2,4), (2,5), (3,3), (3,5)], 
-    "clf__C": [0.1, 1.0, 10.0], 
-    "clf__solver": ["liblinear", "lbfgs"]
-    }
+    "vec__ngram_range": [(2, 2), (2, 3), (2, 4), (2, 5), (3, 3), (3, 5)],
+    "clf__C": [0.1, 1.0, 10.0],
+    "clf__solver": ["liblinear", "lbfgs"],
+}
 char_model = DistGridSearchCV(char_pipe, char_params, sc=sc, cv=cv, scoring=scoring)
 
 # define word/character vector -> feature selection -> tree ensemble
-both_model = Pipeline(steps=[
-    ("vec", FeatureUnion([
-        ("word", CountVectorizer(analyzer="word", decode_error="ignore")), 
-        ("char", CountVectorizer(analyzer="char_wb", decode_error="ignore"))
-        ])), 
-    ("select", SelectKBest(f_classif, 1000)), 
-    ("clf", DistExtraTreesClassifier(n_estimators=1000, max_depth=None, sc=sc))
-    ])
+feature_union = FeatureUnion(
+    [
+        ("word", CountVectorizer(analyzer="word", decode_error="ignore")),
+        ("char", CountVectorizer(analyzer="char_wb", decode_error="ignore")),
+    ]
+)
+both_model = Pipeline(
+    steps=[
+        ("vec", feature_union),
+        ("select", SelectKBest(f_classif, 1000)),
+        ("clf", DistExtraTreesClassifier(n_estimators=1000, max_depth=None, sc=sc)),
+    ]
+)
 
 # fit all models
 start = time.time()
@@ -142,13 +147,16 @@ print("Total Fit Time: {0}".format(time.time() - start))
 
 # construct voter
 model = SimpleVoter(
-    [("word", word_model), ("char", char_model), ("both", both_model)], 
-    classes=word_model.classes_, voting="soft"
-    )
+    [("word", word_model), ("char", char_model), ("both", both_model)],
+    classes=word_model.classes_,
+    voting="soft",
+)
 
 # compute scoring metrics on holdout
-for model_tuple in (model.estimators + [("model", model)]):
+for model_tuple in model.estimators + [("model", model)]:
     print("-- {0} Model --".format(model_tuple[0].title()))
-    print("ROC AUC Score", roc_auc_score(y_test, model_tuple[1].predict_proba(X_test)[:,1]))
+    print(
+        "ROC AUC Score",
+        roc_auc_score(y_test, model_tuple[1].predict_proba(X_test)[:, 1]),
+    )
     print("F1 Score", f1_score(y_test, model_tuple[1].predict(X_test)))
-

@@ -41,11 +41,7 @@ from sklearn.datasets import make_classification
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # parameters
@@ -57,18 +53,24 @@ cv = 5
 
 # build synthetic training data
 X, y = make_classification(
-    n_samples=100000, n_features=40, n_informative=12, 
-    n_classes=2, n_clusters_per_class=20, random_state=5
-    )
+    n_samples=100000,
+    n_features=40,
+    n_informative=12,
+    n_classes=2,
+    n_clusters_per_class=20,
+    random_state=5,
+)
 
 # train distributed feature eliminator
 start = time.time()
 fe = DistFeatureEliminator(
     RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth),
-    scoring=scoring, min_features_to_select=min_features_to_select, 
-    cv=cv, sc=sc
-    )
-fe.fit(X,y)
+    scoring=scoring,
+    min_features_to_select=min_features_to_select,
+    cv=cv,
+    sc=sc,
+)
+fe.fit(X, y)
 print("-- Distributed Feature Elimination --")
 print("Elapsed Time: {0}".format(round((time.time() - start), 4)))
 print("Score w/ All Features: {0}".format(fe.scores_[0]))
@@ -79,9 +81,11 @@ print("Best Score: {0}".format(fe.best_score_))
 start = time.time()
 rfe = RFECV(
     RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth),
-    scoring=scoring, min_features_to_select=min_features_to_select, cv=cv
-    )
-rfe.fit(X,y)
+    scoring=scoring,
+    min_features_to_select=min_features_to_select,
+    cv=cv,
+)
+rfe.fit(X, y)
 print("-- RFE CV --")
 print("Elapsed Time: {0}".format(round((time.time() - start), 4)))
 print("Score w/ All Features: {0}".format(rfe.grid_scores_[-1]))

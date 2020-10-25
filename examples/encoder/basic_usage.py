@@ -35,18 +35,13 @@ from sklearn.datasets import fetch_20newsgroups
 from pyspark.sql import SparkSession
 
 # spark session initialization
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # load 20newsgroups dataset
 dataset = fetch_20newsgroups(
-    shuffle=True, random_state=1,
-    remove=('headers', 'footers', 'quotes')
-    )
+    shuffle=True, random_state=1, remove=("headers", "footers", "quotes")
+)
 
 # variables
 Cs = [0.1, 1.0, 10.0]
@@ -63,9 +58,12 @@ dataset["target"] = dataset["target"][:1000]
 encoder = Encoderizer(size="small")
 X_t = encoder.fit_transform(df)
 model = DistGridSearchCV(
-    LogisticRegression(solver=solver, multi_class="auto"), 
-    dict(C=Cs), sc, scoring=scoring, cv=cv
-    )
+    LogisticRegression(solver=solver, multi_class="auto"),
+    dict(C=Cs),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 model.fit(X_t, dataset["target"])
 print(model.best_score_)
 
@@ -73,9 +71,12 @@ print(model.best_score_)
 encoder = Encoderizer(size="medium")
 X_t = encoder.fit_transform(df)
 model = DistGridSearchCV(
-    LogisticRegression(solver=solver, multi_class="auto"), 
-    dict(C=Cs), sc, scoring=scoring, cv=cv
-    )
+    LogisticRegression(solver=solver, multi_class="auto"),
+    dict(C=Cs),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 model.fit(X_t, dataset["target"])
 print(model.best_score_)
 
@@ -83,8 +84,11 @@ print(model.best_score_)
 encoder = Encoderizer(size="large")
 X_t = encoder.fit_transform(df)
 model = DistGridSearchCV(
-    LogisticRegression(solver=solver, multi_class="auto"), 
-    dict(C=Cs), sc, scoring=scoring, cv=cv
-    )
+    LogisticRegression(solver=solver, multi_class="auto"),
+    dict(C=Cs),
+    sc,
+    scoring=scoring,
+    cv=cv,
+)
 model.fit(X_t, dataset["target"])
 print(model.best_score_)

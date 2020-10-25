@@ -38,36 +38,38 @@ from skdist.distribute.ensemble import DistRandomTreesEmbedding
 from pyspark.sql import SparkSession
 
 # instantiate spark session
-spark = (
-    SparkSession
-    .builder
-    .getOrCreate()
-    )
+spark = SparkSession.builder.getOrCreate()
 sc = spark.sparkContext
 
 # make a synthetic dataset
-X, y = make_circles(
-    n_samples=10000, factor=0.5, 
-    random_state=0, noise=0.15
-    )
+X, y = make_circles(n_samples=10000, factor=0.5, random_state=0, noise=0.15)
 
 # use DistRandomTreesEmbedding to transform data
-hasher = DistRandomTreesEmbedding(
-    n_estimators=1000, random_state=0, 
-    max_depth=3, sc=sc
-    )
+hasher = DistRandomTreesEmbedding(n_estimators=1000, random_state=0, max_depth=3, sc=sc)
 X_transformed = hasher.fit_transform(X)
 
 # score a Naive Bayes classifier on the original and transformed data
 nb = BernoulliNB()
-print("Naive Bayes -- Transformed: {0}".format(
-    np.mean(cross_val_score(nb, X_transformed, y, cv=5, scoring="roc_auc"))))
-print("Naive Bayes -- Original: {0}".format(
-    np.mean(cross_val_score(nb, X, y, cv=5, scoring="roc_auc"))))
+print(
+    "Naive Bayes -- Transformed: {0}".format(
+        np.mean(cross_val_score(nb, X_transformed, y, cv=5, scoring="roc_auc"))
+    )
+)
+print(
+    "Naive Bayes -- Original: {0}".format(
+        np.mean(cross_val_score(nb, X, y, cv=5, scoring="roc_auc"))
+    )
+)
 
 # score an Extra Trees classifier on the original and transformed data
 trees = ExtraTreesClassifier(max_depth=3, n_estimators=10, random_state=0)
-print("Extra Trees -- Transformed: {0}".format(
-    np.mean(cross_val_score(trees, X_transformed, y, cv=5, scoring="roc_auc"))))
-print("Extra Trees -- Original: {0}".format(
-    np.mean(cross_val_score(trees, X, y, cv=5, scoring="roc_auc"))))
+print(
+    "Extra Trees -- Transformed: {0}".format(
+        np.mean(cross_val_score(trees, X_transformed, y, cv=5, scoring="roc_auc"))
+    )
+)
+print(
+    "Extra Trees -- Original: {0}".format(
+        np.mean(cross_val_score(trees, X, y, cv=5, scoring="roc_auc"))
+    )
+)
