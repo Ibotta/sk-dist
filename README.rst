@@ -85,7 +85,7 @@ Dependencies
 ``sk-dist`` requires:
 
 -  `Python <https://www.python.org/>`__ (>= 3.5)
--  `scikit-learn <https://scikit-learn.org/stable/>`__ (>=0.20.0)
+-  `scikit-learn <https://scikit-learn.org/stable/>`__ (>=0.20.0,<0.23.2)
 -  `pandas <https://pandas.pydata.org/>`__ (>=0.17.0)
 -  `numpy <https://www.numpy.org/>`__ 
 -  `scipy <https://www.scipy.org/>`__ 
