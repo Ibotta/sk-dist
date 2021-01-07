@@ -26,16 +26,18 @@ DOWNLOAD_URL = "https://pypi.org/project/sk-dist/#files"
 PROJECT_URLS = {"Source Code": "https://github.com/Ibotta/sk-dist"}
 MIN_PYTHON_VERSION = "3.5"
 MIN_PANDAS_VERSION = "0.17.0"
+MIN_NUMPY_VERSION = "1.16.5"
 MIN_SKLEARN_VERSION = "0.20.0"
+MAX_SKLEARN_VERSION = "0.23.2"
 MIN_XGBOOST_VERSION = "0.4"
 PYARROW_VERSION = "0.16.0"
 MIN_PYSPARK_VERSION = "2.4.4"
 MIN_PYTESTSPARK_VERSION = "0.4.5"
 
 install_requires = [
-    "scikit-learn>={0}".format(MIN_SKLEARN_VERSION),
+    "scikit-learn>={0},<{1}".format(MIN_SKLEARN_VERSION, MAX_SKLEARN_VERSION),
     "pandas>={0}".format(MIN_PANDAS_VERSION),
-    "numpy",
+    "numpy>={0}".format(MIN_NUMPY_VERSION),
     "scipy",
     "joblib",
 ]
