@@ -7,8 +7,11 @@ then
   PATH=$(echo "$PATH" | sed -e 's/:\/usr\/local\/lib\/jvm\/openjdk11\/bin//')
   JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
   mkdir -p /opt
+  echo "downloading spark"
   wget -q -O /opt/spark.tgz https://www.apache.org/dyn/closer.lua/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz
-  tar -xzvf /opt/spark.tgz -C /opt/
+  echo "before untar"
+  tar xzvf /opt/spark.tgz -C /opt/
+  echo "after untar"
   rm /opt/spark.tgz
   export SPARK_HOME=/opt/spark-2.4.8-bin-hadoop2.7
   export PATH=$PATH:/opt/spark-2.4.8-bin-hadoop2.7/bin
