@@ -188,8 +188,8 @@ Thanks to `James Foley <https://github.com/chadfoley36>`__ for logo artwork.
 
 .. |License| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
    :target: https://opensource.org/licenses/Apache-2.0
-.. |Build Status| image:: https://travis-ci.org/Ibotta/sk-dist.png?branch=master
-   :target: https://travis-ci.org/Ibotta/sk-dist
+.. |Build Status| image:: https://travis-ci.com/Ibotta/sk-dist.png?branch=master
+   :target: https://travis-ci.com/Ibotta/sk-dist
 .. |PyPI Package| image:: https://badge.fury.io/py/sk-dist.svg
    :target: https://pypi.org/project/sk-dist/
 .. |Downloads| image:: https://pepy.tech/badge/sk-dist
