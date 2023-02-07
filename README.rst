@@ -4,7 +4,7 @@
 sk-dist: Distributed scikit-learn meta-estimators in PySpark
 ============================================================
 
-|License| |Build Status| |PyPI Package| |Downloads| |Python Versions|
+|License| |PyPI Package| |Downloads| |Python Versions|
 
 What is it?
 -----------
