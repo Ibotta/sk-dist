@@ -628,7 +628,7 @@ class DistGridSearchCV(DistBaseSearchCV, GridSearchCV):
             param_grid,
             scoring=scoring,
             n_jobs=n_jobs,
-            iid=iid,
+            # iid=iid,
             refit=refit,
             cv=cv,
             verbose=verbose,
